@@ -11,7 +11,6 @@ export default defineConfig({
     server: { entry: "server" },
   },
   nitro: {
-    preset: "cloudflare-pages",
-    output: { dir: ".output", publicDir: ".output/public" },
+    preset: "vercel",
   },
 });
