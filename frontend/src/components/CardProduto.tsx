@@ -24,7 +24,7 @@ export function CardProduto({ produto, ehHistorico = false }: CardProdutoProps) 
       href={`/produtos/${produto.id}`}
       className="group relative flex flex-col overflow-hidden rounded-2xl border border-border bg-card transition-all hover:border-foreground/30 hover:shadow-[0_8px_30px_-12px_rgba(0,0,0,0.15)]"
     >
-      <div className="relative aspect-[4/3] overflow-hidden bg-muted">
+      <div className="relative aspect-[3/2] overflow-hidden bg-muted">
         {produto.imagem ? (
           <Image
             src={produto.imagem}
@@ -55,16 +55,16 @@ export function CardProduto({ produto, ehHistorico = false }: CardProdutoProps) 
         )}
       </div>
 
-      <div className="flex flex-1 flex-col gap-3 p-5">
-        <h3 className="text-base font-medium leading-snug text-foreground line-clamp-2">
+      <div className="flex flex-1 flex-col gap-2 p-4">
+        <h3 className="text-sm font-medium leading-snug text-foreground line-clamp-2">
           {produto.nome}
         </h3>
 
-        <div className="flex items-end justify-between gap-3 mt-auto">
+        <div className="flex items-end justify-between gap-2 mt-auto">
           <div>
             {produto.precoAtual != null ? (
               <>
-                <div className="font-serif text-3xl leading-none text-ink">
+                <div className="font-serif text-2xl leading-none text-ink">
                   {formatarBRL(produto.precoAtual)}
                 </div>
                 {!estavel && produto.precoAnterior != null && (
@@ -97,7 +97,7 @@ export function CardProduto({ produto, ehHistorico = false }: CardProdutoProps) 
           )}
         </div>
 
-        <div className="flex items-center justify-between text-xs text-muted-foreground pt-3 border-t border-border/60">
+        <div className="flex items-center justify-between text-xs text-muted-foreground pt-2 border-t border-border/60">
           <span>{produto.monitorandoHaDias} dias monitorando</span>
           <span className="inline-flex items-center gap-1 text-foreground/70 group-hover:text-foreground transition-colors">
             ver detalhes <ExternalLink className="h-3 w-3" />

@@ -69,8 +69,11 @@ export function Header() {
 
           {usuario && (
             <div className="ml-2 flex items-center gap-2 pl-2 border-l border-border">
-              <span className="hidden sm:block text-xs text-muted-foreground truncate max-w-[140px]">
-                {usuario.email}
+              <span
+                title={usuario.email}
+                className="hidden sm:flex h-7 w-7 items-center justify-center rounded-full bg-secondary text-xs font-medium text-foreground select-none"
+              >
+                {usuario.email.split("@")[0].split(".").slice(0, 2).map((p: string) => p[0]).join("").toUpperCase() || usuario.email.slice(0, 2).toUpperCase()}
               </span>
               <button
                 type="button"

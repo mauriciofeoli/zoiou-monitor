@@ -105,7 +105,7 @@
   --warning: oklch(0.68 0.2 28);
   --warning-foreground: oklch(0.14 0.02 28);
   --gold: oklch(0.78 0.14 75);
-  --gold-foreground: oklch(0.14 0 0);
+  --gold-foreground: oklch(0.92 0.1 75);
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 12%);
   --ring: oklch(0.6 0.03 270);

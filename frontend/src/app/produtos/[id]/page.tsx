@@ -20,6 +20,7 @@ import { toast } from "sonner";
 import { Header } from "@/components/Header";
 import { GraficoHistorico } from "@/components/GraficoHistorico";
 import { BadgePrecoHistorico } from "@/components/BadgePrecoHistorico";
+import { ConfirmacaoModal } from "@/components/ConfirmacaoModal";
 import { useAuth } from "@/hooks/use-auth";
 import { atualizarAtivo, atualizarAgora, obterHistorico, removerProduto, listarProdutos } from "@/lib/api";
 import { formatarBRL, ehPrecoHistoricoLista } from "@/lib/utils";
@@ -32,6 +33,7 @@ export default function ProdutoDetalhe() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const [atualizando, setAtualizando] = useState(false);
+  const [confirmandoRemocao, setConfirmandoRemocao] = useState(false);
 
   useEffect(() => {
     if (!carregandoAuth && !usuario) {
@@ -86,7 +88,6 @@ export default function ProdutoDetalhe() {
   }
 
   async function handleRemover() {
-    if (!confirm(`Remover "${produto?.nome}" da sua lista?`)) return;
     try {
       await removerProduto(id);
       await queryClient.invalidateQueries({ queryKey: ["produtos"] });
@@ -251,7 +252,7 @@ export default function ProdutoDetalhe() {
                 {produto.ativo ? "Pausar" : "Retomar"}
               </button>
               <button
-                onClick={handleRemover}
+                onClick={() => setConfirmandoRemocao(true)}
                 className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-4 py-2.5 text-sm text-destructive hover:bg-destructive/5"
               >
                 <Trash2 className="h-4 w-4" /> Remover
@@ -288,6 +289,15 @@ export default function ProdutoDetalhe() {
           <GraficoHistorico dados={pontosHistorico} />
         </section>
       </main>
+
+      <ConfirmacaoModal
+        aberto={confirmandoRemocao}
+        titulo="Remover produto"
+        mensagem={`Remover "${produto.nome}" da sua lista? O histórico de preços será perdido.`}
+        textoBotaoConfirmar="Remover"
+        onConfirmar={() => { setConfirmandoRemocao(false); handleRemover(); }}
+        onCancelar={() => setConfirmandoRemocao(false)}
+      />
     </div>
   );
 }
