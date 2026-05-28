@@ -18,6 +18,10 @@ _origens = (
     else [configuracoes.frontend_url]
 )
 
+logging.info("CORS allow_origins: %s", _origens)
+logging.info("CORS allow_credentials: %s", configuracoes.ambiente != "development")
+logging.info("AMBIENTE: %s | FRONTEND_URL: %s", configuracoes.ambiente, configuracoes.frontend_url)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=_origens,
