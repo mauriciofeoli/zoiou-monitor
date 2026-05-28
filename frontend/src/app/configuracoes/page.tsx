@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Loader2, Mail, MessageCircle, Send } from "lucide-react";
+import { Loader2, MessageCircle, Send } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -10,7 +10,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { atualizarPreferencias, obterPerfil } from "@/lib/api";
 
 interface Canal {
-  id: "email" | "telegram" | "whatsapp";
+  id: "telegram";
   nome: string;
   descricao: string;
   icone: React.ComponentType<{ className?: string }>;
@@ -19,25 +19,11 @@ interface Canal {
 
 const canais: Canal[] = [
   {
-    id: "email",
-    nome: "E-mail",
-    descricao: "Receba um resumo diário e alertas imediatos por e-mail.",
-    icone: Mail,
-    placeholder: "voce@exemplo.com",
-  },
-  {
     id: "telegram",
     nome: "Telegram",
     descricao: "Mensagens instantâneas com link direto para a loja.",
     icone: Send,
     placeholder: "@seu_usuario ou ID numérico",
-  },
-  {
-    id: "whatsapp",
-    nome: "WhatsApp",
-    descricao: "Alertas no seu número, sem precisar abrir o app.",
-    icone: MessageCircle,
-    placeholder: "+55 11 90000-0000",
   },
 ];
 
@@ -60,28 +46,16 @@ export default function Configuracoes() {
   });
 
   const [ativos, setAtivos] = useState<Record<Canal["id"], boolean>>({
-    email: true,
     telegram: false,
-    whatsapp: false,
   });
   const [valores, setValores] = useState<Record<Canal["id"], string>>({
-    email: "",
     telegram: "",
-    whatsapp: "",
   });
 
   useEffect(() => {
     if (perfil) {
-      setAtivos({
-        email: perfil.notifEmail,
-        telegram: perfil.notifTelegram,
-        whatsapp: perfil.notifWhatsapp,
-      });
-      setValores({
-        email: usuario?.email ?? "",
-        telegram: perfil.telegramId ?? "",
-        whatsapp: perfil.whatsapp ?? "",
-      });
+      setAtivos({ telegram: perfil.notifTelegram });
+      setValores({ telegram: perfil.telegramId ?? "" });
     }
   }, [perfil, usuario]);
 
@@ -89,11 +63,8 @@ export default function Configuracoes() {
     setSalvando(true);
     try {
       await atualizarPreferencias({
-        notifEmail: ativos.email,
         notifTelegram: ativos.telegram,
-        notifWhatsapp: ativos.whatsapp,
         telegramId: ativos.telegram ? valores.telegram || null : null,
-        whatsapp: ativos.whatsapp ? valores.whatsapp || null : null,
       });
       await queryClient.invalidateQueries({ queryKey: ["perfil"] });
       toast.success("Preferências salvas!");
@@ -145,7 +116,6 @@ export default function Configuracoes() {
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-secondary text-foreground">
                     <Icon className="h-5 w-5" />
                   </div>
-
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-4">
                       <h3 className="font-serif text-xl text-ink">{canal.nome}</h3>
@@ -167,10 +137,8 @@ export default function Configuracoes() {
                         />
                       </button>
                     </div>
-
                     <p className="mt-1 text-sm text-muted-foreground">{canal.descricao}</p>
-
-                    {ativo && canal.id !== "email" && (
+                    {ativo && (
                       <input
                         value={valores[canal.id]}
                         onChange={(e) => setValores((v) => ({ ...v, [canal.id]: e.target.value }))}
@@ -178,17 +146,26 @@ export default function Configuracoes() {
                         className="mt-3 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                       />
                     )}
-                    {ativo && canal.id === "email" && (
-                      <p className="mt-2 text-xs text-muted-foreground">
-                        Notificações serão enviadas para{" "}
-                        <span className="font-medium text-foreground">{usuario?.email}</span>
-                      </p>
-                    )}
                   </div>
                 </div>
               </div>
             );
           })}
+
+          <div className="rounded-2xl border border-border bg-card p-5 opacity-50 cursor-not-allowed">
+            <div className="flex items-start gap-4">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-secondary text-foreground">
+                <MessageCircle className="h-5 w-5" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <h3 className="font-serif text-xl text-ink">WhatsApp</h3>
+                  <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">em breve</span>
+                </div>
+                <p className="mt-1 text-sm text-muted-foreground">Alertas no seu número, sem precisar abrir o app.</p>
+              </div>
+            </div>
+          </div>
         </div>
 
         <div className="mt-8 flex items-center justify-between rounded-2xl bg-secondary p-5">
@@ -200,7 +177,7 @@ export default function Configuracoes() {
           </div>
           <button
             type="button"
-            onClick={() => setAtivos({ email: false, telegram: false, whatsapp: false })}
+            onClick={() => setAtivos({ telegram: false })}
             className="rounded-full border border-border bg-background px-4 py-2 text-sm hover:bg-card"
           >
             Ativar
