@@ -68,10 +68,10 @@ export default function Dashboard() {
             <p className="text-sm uppercase tracking-[0.18em] text-muted-foreground mb-3">
               Sua lista de desejos
             </p>
-            <h1 className="font-serif text-5xl md:text-6xl text-ink leading-[1.05]">
+            <h1 className="font-serif text-3xl md:text-4xl text-ink leading-snug">
               De olho em <em className="text-success">{ativos.length}</em> produto
               {ativos.length !== 1 ? "s" : ""}
-              <br /> em <em>{lojas.size}</em> loja{lojas.size !== 1 ? "s" : ""}.
+              {" "}em <em>{lojas.size}</em> loja{lojas.size !== 1 ? "s" : ""}.
             </h1>
             {economia > 0 && (
               <p className="mt-4 text-muted-foreground max-w-md">

@@ -180,14 +180,14 @@ export default function ProdutoDetalhe() {
               {isPrecoHistorico && <BadgePrecoHistorico />}
             </div>
 
-            <h1 className="font-serif text-4xl md:text-5xl text-ink leading-tight">
+            <h1 className="font-serif text-2xl md:text-3xl text-ink leading-tight">
               {produto.nome}
             </h1>
 
             <div className="mt-6 flex items-end gap-4">
               {produto.precoAtual != null ? (
                 <>
-                  <div className="font-serif text-6xl text-ink leading-none">
+                  <div className="font-serif text-4xl text-ink leading-none">
                     {formatarBRL(produto.precoAtual)}
                   </div>
                   {(subiu || caiu) && (
@@ -273,14 +273,14 @@ export default function ProdutoDetalhe() {
           ].map((s) => (
             <div key={s.label} className="rounded-2xl border border-border bg-card p-5">
               <div className="text-xs uppercase tracking-wider text-muted-foreground">{s.label}</div>
-              <div className={`font-serif text-2xl mt-2 ${s.accent ?? ""}`}>{s.valor}</div>
+              <div className={`font-serif text-xl mt-2 ${s.accent ?? ""}`}>{s.valor}</div>
             </div>
           ))}
         </div>
 
         <section className="mt-8 rounded-2xl border border-border bg-card p-6">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="font-serif text-2xl text-ink">Histórico de preços</h2>
+            <h2 className="font-serif text-lg text-ink">Histórico de preços</h2>
             <span className="text-xs text-muted-foreground">
               {pontosHistorico.length} registro{pontosHistorico.length !== 1 ? "s" : ""}
             </span>
