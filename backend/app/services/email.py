@@ -1,3 +1,4 @@
+import html as html_lib
 import logging
 
 import resend
@@ -16,6 +17,9 @@ def _montar_html(
     eh_historico: bool,
 ) -> str:
     """Gera o corpo HTML do e-mail de notificação."""
+    nome_esc = html_lib.escape(nome)
+    loja_esc = html_lib.escape(loja)
+    url_esc = html_lib.escape(url)
     diferenca = preco_atual - preco_anterior
     percentual = abs(diferenca / preco_anterior * 100) if preco_anterior else 0
     cor = "#16a34a" if diferenca < 0 else "#dc2626"
@@ -27,8 +31,8 @@ def _montar_html(
 
     return f"""
     <div style="font-family:sans-serif;max-width:480px;margin:0 auto">
-      <h2 style="color:#111">{nome}</h2>
-      <p style="color:#6b7280">{loja}</p>
+      <h2 style="color:#111">{nome_esc}</h2>
+      <p style="color:#6b7280">{loja_esc}</p>
       {destaque}
       <p style="font-size:2rem;font-weight:bold;color:{cor}">
         R$ {preco_atual:,.2f}
@@ -39,7 +43,7 @@ def _montar_html(
       <p style="color:{cor}">
         {sinal} R$ {abs(diferenca):,.2f} ({percentual:.1f}%)
       </p>
-      <a href="{url}" style="display:inline-block;margin-top:16px;padding:10px 20px;
+      <a href="{url_esc}" style="display:inline-block;margin-top:16px;padding:10px 20px;
          background:#111;color:#fff;border-radius:6px;text-decoration:none">
         Ver produto
       </a>

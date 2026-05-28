@@ -1,10 +1,27 @@
-from pydantic import BaseModel, HttpUrl
+import ipaddress
+
+from pydantic import BaseModel, HttpUrl, field_validator
 
 
 class ProdutoCreate(BaseModel):
     """Payload para adicionar um produto à lista de desejos."""
 
     url: HttpUrl
+
+    @field_validator("url")
+    @classmethod
+    def bloquear_url_privada(cls, v: HttpUrl) -> HttpUrl:
+        host = v.host or ""
+        if host.lower() in {"localhost", "0.0.0.0"}:
+            raise ValueError("URL inválida.")
+        try:
+            ip = ipaddress.ip_address(host)
+            if not ip.is_global:
+                raise ValueError("URL inválida.")
+        except ValueError as exc:
+            if "URL inválida" in str(exc):
+                raise
+        return v
 
 
 class ProdutoResponse(BaseModel):
