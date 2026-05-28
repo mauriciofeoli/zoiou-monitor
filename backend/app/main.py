@@ -3,20 +3,13 @@ import logging
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from slowapi import _rate_limit_exceeded_handler
-from slowapi.errors import RateLimitExceeded
-
 from app.api.routes import historico, produtos, usuarios
 from app.core.config import configuracoes
-from app.core.limiter import limiter
 from app.scheduler.jobs import iniciar_scheduler
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s — %(name)s — %(message)s")
 
 app = FastAPI(title="Zoiou API", version="1.0.0", docs_url="/docs")
-
-app.state.limiter = limiter
-app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 _origens_dev = ["http://localhost:3000", "http://localhost:3001"]
 _origens = _origens_dev if configuracoes.ambiente == "development" else [configuracoes.frontend_url]

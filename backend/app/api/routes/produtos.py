@@ -6,7 +6,7 @@ from supabase import AsyncClient
 
 from app.api.deps import obter_cliente_rls, obter_usuario_autenticado
 from app.core.database import obter_cliente as _db_direto
-from app.core.limiter import limiter
+from app.core.limiter import rate_limit
 from app.schemas.produto import ProdutoCreate, ProdutoPatch, ProdutoResponse
 from app.services.historico import buscar_ultimo_preco, buscar_ultimos_precos, registrar_preco
 from app.services.scraper import extrair_metadados_produto, extrair_preco, extrair_produto_completo
@@ -86,10 +86,9 @@ async def listar_produtos(
     return resultado
 
 
-@router.post("", response_model=ProdutoResponse, status_code=status.HTTP_201_CREATED)
-@limiter.limit("10/minute")
+@router.post("", response_model=ProdutoResponse, status_code=status.HTTP_201_CREATED,
+             dependencies=[Depends(rate_limit(10))])
 async def adicionar_produto(
-    request: Request,
     payload: ProdutoCreate,
     background_tasks: BackgroundTasks,
     usuario: dict = Depends(obter_usuario_autenticado),
@@ -155,10 +154,9 @@ async def adicionar_produto(
     )
 
 
-@router.post("/{produto_id}/atualizar", response_model=ProdutoResponse)
-@limiter.limit("6/minute")
+@router.post("/{produto_id}/atualizar", response_model=ProdutoResponse,
+             dependencies=[Depends(rate_limit(6))])
 async def atualizar_preco_agora(
-    request: Request,
     produto_id: str,
     usuario: dict = Depends(obter_usuario_autenticado),
     db: AsyncClient = Depends(obter_cliente_rls),
