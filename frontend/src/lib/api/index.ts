@@ -7,7 +7,7 @@ import type {
   Usuario,
 } from "@/types";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "https://zoiou-monitor-production.up.railway.app";
 
 async function tokenAtual(): Promise<string> {
   const { data } = await supabase.auth.getSession();
