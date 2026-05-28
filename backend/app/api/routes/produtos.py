@@ -6,7 +6,6 @@ from supabase import AsyncClient
 
 from app.api.deps import obter_cliente_rls, obter_usuario_autenticado
 from app.core.database import obter_cliente as _db_direto
-from app.core.limiter import RateLimiter
 from app.schemas.produto import ProdutoCreate, ProdutoPatch, ProdutoResponse
 from app.services.historico import buscar_ultimo_preco, buscar_ultimos_precos, registrar_preco
 from app.services.scraper import extrair_metadados_produto, extrair_preco, extrair_produto_completo
@@ -86,15 +85,10 @@ async def listar_produtos(
     return resultado
 
 
-_limit_adicionar = RateLimiter(max_requests=10)
-_limit_atualizar = RateLimiter(max_requests=6)
-
-
 @router.post("", response_model=ProdutoResponse, status_code=status.HTTP_201_CREATED)
 async def adicionar_produto(
     payload: ProdutoCreate,
     background_tasks: BackgroundTasks,
-    _rl: None = Depends(_limit_adicionar),
     usuario: dict = Depends(obter_usuario_autenticado),
     db: AsyncClient = Depends(obter_cliente_rls),
 ) -> ProdutoResponse:
@@ -161,7 +155,6 @@ async def adicionar_produto(
 @router.post("/{produto_id}/atualizar", response_model=ProdutoResponse)
 async def atualizar_preco_agora(
     produto_id: str,
-    _rl: None = Depends(_limit_atualizar),
     usuario: dict = Depends(obter_usuario_autenticado),
     db: AsyncClient = Depends(obter_cliente_rls),
 ) -> ProdutoResponse:

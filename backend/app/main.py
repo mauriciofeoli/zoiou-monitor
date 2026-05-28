@@ -5,11 +5,14 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from app.api.routes import historico, produtos, usuarios
 from app.core.config import configuracoes
+from app.core.limiter import RateLimitMiddleware
 from app.scheduler.jobs import iniciar_scheduler
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s — %(name)s — %(message)s")
 
 app = FastAPI(title="Zoiou API", version="1.0.0", docs_url="/docs")
+
+app.add_middleware(RateLimitMiddleware)
 
 _origens_dev = ["http://localhost:3000", "http://localhost:3001"]
 _origens = _origens_dev if configuracoes.ambiente == "development" else [configuracoes.frontend_url]
