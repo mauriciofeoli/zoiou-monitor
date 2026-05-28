@@ -43,7 +43,8 @@ export default function ProdutoDetalhe() {
     queryFn: listarProdutos,
     enabled: !!usuario,
     refetchInterval: (query) => {
-      const produto = (query.state.data as typeof produtos | undefined)?.find((p) => p.id === id);
+      const data = query.state.data as Produto[] | undefined;
+      const produto = data?.find((p) => p.id === id);
       return produto?.precoAtual === null ? 5000 : false;
     },
   });
