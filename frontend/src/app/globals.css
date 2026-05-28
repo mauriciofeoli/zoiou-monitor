@@ -3,7 +3,6 @@
 
 @custom-variant dark (&:is(.dark *));
 
-
 @theme inline {
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
@@ -38,33 +37,34 @@
   --color-gold-foreground: var(--gold-foreground);
   --color-ink: var(--ink);
 
-  --font-serif: var(--font-instrument-serif), ui-serif, Georgia, serif;
+  --font-serif: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
 }
 
 :root {
-  --radius: 0.75rem;
+  --radius: 0.5rem;
 
-  --background: oklch(0.985 0.008 85);
-  --foreground: oklch(0.18 0.02 270);
-  --ink: oklch(0.14 0.02 270);
+  /* Notion-inspired neutral palette */
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.25 0.012 85);
+  --ink: oklch(0.18 0.012 85);
 
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.18 0.02 270);
+  --card-foreground: oklch(0.25 0.012 85);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.18 0.02 270);
+  --popover-foreground: oklch(0.25 0.012 85);
 
-  --primary: oklch(0.18 0.02 270);
-  --primary-foreground: oklch(0.985 0.008 85);
+  --primary: oklch(0.18 0.012 85);
+  --primary-foreground: oklch(1 0 0);
 
-  --secondary: oklch(0.95 0.012 85);
-  --secondary-foreground: oklch(0.18 0.02 270);
+  --secondary: oklch(0.974 0.003 85);
+  --secondary-foreground: oklch(0.25 0.012 85);
 
-  --muted: oklch(0.95 0.012 85);
-  --muted-foreground: oklch(0.48 0.015 270);
+  --muted: oklch(0.97 0.003 85);
+  --muted-foreground: oklch(0.52 0.008 85);
 
-  --accent: oklch(0.93 0.02 85);
-  --accent-foreground: oklch(0.18 0.02 270);
+  --accent: oklch(0.96 0.006 85);
+  --accent-foreground: oklch(0.25 0.012 85);
 
   --success: oklch(0.58 0.16 150);
   --success-foreground: oklch(0.99 0.01 150);
@@ -75,29 +75,29 @@
   --warning-foreground: oklch(0.99 0.01 28);
 
   --gold: oklch(0.72 0.14 75);
-  --gold-foreground: oklch(0.18 0.02 270);
+  --gold-foreground: oklch(0.18 0.012 85);
 
-  --border: oklch(0.9 0.012 85);
-  --input: oklch(0.9 0.012 85);
-  --ring: oklch(0.55 0.04 270);
+  --border: oklch(0.905 0.004 85);
+  --input: oklch(0.905 0.004 85);
+  --ring: oklch(0.5 0.01 270);
 }
 
 .dark {
-  --background: oklch(0.16 0.015 270);
-  --foreground: oklch(0.96 0.008 85);
-  --ink: oklch(0.99 0.005 85);
-  --card: oklch(0.2 0.015 270);
-  --card-foreground: oklch(0.96 0.008 85);
-  --popover: oklch(0.2 0.015 270);
-  --popover-foreground: oklch(0.96 0.008 85);
-  --primary: oklch(0.96 0.008 85);
-  --primary-foreground: oklch(0.16 0.015 270);
-  --secondary: oklch(0.24 0.018 270);
-  --secondary-foreground: oklch(0.96 0.008 85);
-  --muted: oklch(0.24 0.018 270);
-  --muted-foreground: oklch(0.7 0.02 270);
-  --accent: oklch(0.28 0.02 270);
-  --accent-foreground: oklch(0.96 0.008 85);
+  --background: oklch(0.14 0 0);
+  --foreground: oklch(0.83 0 0);
+  --ink: oklch(0.93 0 0);
+  --card: oklch(0.18 0 0);
+  --card-foreground: oklch(0.83 0 0);
+  --popover: oklch(0.18 0 0);
+  --popover-foreground: oklch(0.83 0 0);
+  --primary: oklch(0.83 0 0);
+  --primary-foreground: oklch(0.14 0 0);
+  --secondary: oklch(0.22 0 0);
+  --secondary-foreground: oklch(0.83 0 0);
+  --muted: oklch(0.22 0 0);
+  --muted-foreground: oklch(0.6 0 0);
+  --accent: oklch(0.25 0 0);
+  --accent-foreground: oklch(0.83 0 0);
   --success: oklch(0.7 0.16 150);
   --success-foreground: oklch(0.14 0.02 150);
   --destructive: oklch(0.68 0.2 28);
@@ -105,9 +105,9 @@
   --warning: oklch(0.68 0.2 28);
   --warning-foreground: oklch(0.14 0.02 28);
   --gold: oklch(0.78 0.14 75);
-  --gold-foreground: oklch(0.16 0.015 270);
+  --gold-foreground: oklch(0.14 0 0);
   --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
+  --input: oklch(1 0 0 / 12%);
   --ring: oklch(0.6 0.03 270);
 }
 
@@ -127,9 +127,10 @@
     color: var(--color-foreground);
   }
 
+  /* Headings usam Inter bold com tracking tight — estilo Notion */
   .font-serif {
-    font-family: var(--font-serif);
-    font-weight: 400;
-    letter-spacing: -0.01em;
+    font-family: var(--font-sans);
+    font-weight: 700;
+    letter-spacing: -0.025em;
   }
 }
