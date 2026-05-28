@@ -12,6 +12,7 @@ import {
   RefreshCw,
   Trash2,
 } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
@@ -153,15 +154,17 @@ export default function ProdutoDetalhe() {
         </Link>
 
         <div className="grid gap-8 md:grid-cols-[260px_1fr] items-start">
-          <div className="overflow-hidden rounded-2xl border border-border bg-card">
+          <div className="relative aspect-square overflow-hidden rounded-2xl border border-border bg-card">
             {produto.imagem ? (
-              <img
+              <Image
                 src={produto.imagem}
                 alt={produto.nome}
-                className="h-full w-full object-cover"
+                fill
+                sizes="(max-width: 768px) 100vw, 260px"
+                className="object-cover"
               />
             ) : (
-              <div className="aspect-square flex items-center justify-center text-muted-foreground text-sm">
+              <div className="absolute inset-0 flex items-center justify-center text-muted-foreground text-sm">
                 Sem imagem
               </div>
             )}

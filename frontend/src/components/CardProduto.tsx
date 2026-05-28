@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { ArrowDownRight, ArrowUpRight, ExternalLink, Minus } from "lucide-react";
 import type { Produto } from "@/types";
@@ -25,14 +26,15 @@ export function CardProduto({ produto, ehHistorico = false }: CardProdutoProps) 
     >
       <div className="relative aspect-[4/3] overflow-hidden bg-muted">
         {produto.imagem ? (
-          <img
+          <Image
             src={produto.imagem}
             alt={produto.nome}
-            loading="lazy"
-            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+            fill
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+            className="object-cover transition-transform duration-500 group-hover:scale-105"
           />
         ) : (
-          <div className="h-full w-full flex items-center justify-center text-muted-foreground text-sm">
+          <div className="absolute inset-0 flex items-center justify-center text-muted-foreground text-sm">
             Sem imagem
           </div>
         )}

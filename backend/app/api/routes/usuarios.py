@@ -17,7 +17,7 @@ async def obter_perfil(
         await db.table("usuarios")
         .select("*")
         .eq("id", usuario["id"])
-        .single()
+        .maybe_single()
         .execute()
     )
     if not resposta.data:

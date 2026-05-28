@@ -20,7 +20,15 @@ async def obter_usuario_autenticado(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Token inválido ou expirado.",
             )
-        return {"id": resposta.user.id, "email": resposta.user.email}
+        usuario = {"id": resposta.user.id, "email": resposta.user.email}
+        # Garante que o usuário existe na tabela pública (handles signup antes da migration)
+        await db.table("usuarios").upsert(
+            {"id": usuario["id"], "email": usuario["email"]},
+            on_conflict="id",
+        ).execute()
+        return usuario
+    except HTTPException:
+        raise
     except Exception:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
