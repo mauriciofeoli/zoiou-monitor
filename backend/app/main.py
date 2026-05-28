@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from app.api.routes import historico, produtos, usuarios
 from app.core.config import configuracoes
-from app.core.limiter import RateLimitMiddleware
+from app.core.limiter import RateLimitMiddleware, _contagens
 from app.scheduler.jobs import iniciar_scheduler
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s — %(name)s — %(message)s")
@@ -54,5 +54,16 @@ async def shutdown() -> None:
 
 @app.get("/health")
 async def health() -> dict:
-    """Endpoint de saúde para Railway."""
     return {"status": "ok"}
+
+
+@app.get("/_debug/rate")
+async def debug_rate(request: Request) -> dict:
+    """Debug temporário — remove depois."""
+    ip_xff = request.headers.get("x-forwarded-for", "")
+    ip_client = request.client.host if request.client else None
+    return {
+        "ip_xff": ip_xff,
+        "ip_client": ip_client,
+        "contagens": {k: {ip: len(ts) for ip, ts in v.items()} for k, v in _contagens.items()},
+    }
