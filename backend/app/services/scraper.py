@@ -203,37 +203,57 @@ def _extrair_metadados_de_sopa(sopa: BeautifulSoup, url: str) -> dict:
     return {"nome": nome, "loja": loja, "imagem": imagem}
 
 
+_HEADERS_BR = {
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+    "Accept-Language": "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7",
+    "Accept-Encoding": "gzip, deflate, br",
+    "Cache-Control": "no-cache",
+    "Pragma": "no-cache",
+    "Upgrade-Insecure-Requests": "1",
+    "Sec-Fetch-Dest": "document",
+    "Sec-Fetch-Mode": "navigate",
+    "Sec-Fetch-Site": "none",
+    "Sec-Fetch-User": "?1",
+}
+
+
 async def _buscar_html_cffi(url: str) -> str | None:
     """Busca HTML usando curl_cffi com fingerprint de Chrome — bypassa Cloudflare."""
     for perfil in _IMPERSONATE:
         try:
             async with AsyncSession(impersonate=perfil) as s:
-                r = await s.get(url, timeout=_TIMEOUT_HTTP)
+                r = await s.get(url, timeout=_TIMEOUT_HTTP, headers=_HEADERS_BR)
+                logger.info("curl_cffi [%s] → HTTP %d para %s", perfil, r.status_code, url)
                 if r.status_code == 200:
                     return r.text
         except Exception as exc:
-            logger.debug("curl_cffi [%s] falhou para %s: %s", perfil, url, exc)
+            logger.warning("curl_cffi [%s] falhou para %s: %s", perfil, url, exc)
     return None
 
 
 async def _buscar_html_playwright(url: str) -> str | None:
     """Busca HTML via Playwright — fallback para sites com JS pesado."""
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
+        browser = await p.chromium.launch(headless=True, args=["--no-sandbox", "--disable-dev-shm-usage"])
         try:
-            ctx = await browser.new_context(locale="pt-BR")
+            ctx = await browser.new_context(
+                locale="pt-BR",
+                user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+                extra_http_headers={"Accept-Language": "pt-BR,pt;q=0.9"},
+            )
             page = await ctx.new_page()
             await page.goto(url, timeout=_TIMEOUT_MS, wait_until="domcontentloaded")
-            # Aguarda até 5s por algum elemento de preço
             for sel in [".prod-new-price", ".info-price", "[itemprop='price']", ".price"]:
                 try:
                     await page.wait_for_selector(sel, timeout=5_000)
                     break
                 except Exception:
                     continue
-            return await page.content()
+            html = await page.content()
+            logger.info("Playwright obteve %d bytes para %s", len(html), url)
+            return html
         except Exception as exc:
-            logger.debug("Playwright falhou para %s: %s", url, exc)
+            logger.warning("Playwright falhou para %s: %s", url, exc)
             return None
         finally:
             await browser.close()
