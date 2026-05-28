@@ -2,11 +2,12 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Eye, LogOut, Moon, Settings, Sun } from "lucide-react";
+import { LogOut, Moon, Settings, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/use-auth";
+import { ZoiouWordmark } from "@/components/ZoiouWordmark";
 
 export function Header() {
   const { usuario, sair } = useAuth();
@@ -25,13 +26,9 @@ export function Header() {
   return (
     <header className="border-b border-border/70 bg-background/80 backdrop-blur sticky top-0 z-40">
       <div className="mx-auto max-w-6xl px-6 h-16 flex items-center justify-between">
-        <Link href="/" className="flex items-center gap-2 group">
-          <span className="relative inline-flex h-9 w-9 items-center justify-center rounded-full bg-ink text-background">
-            <Eye className="h-5 w-5" strokeWidth={2.2} />
-          </span>
-          <span className="font-serif text-2xl leading-none">
-            zoiou<span className="text-success">.</span>
-          </span>
+        <Link href="/" className="flex items-center gap-1 group">
+          <ZoiouWordmark size={26} className="text-ink" />
+          <span className="text-success font-bold text-2xl leading-none" style={{ marginLeft: 1 }}>.</span>
         </Link>
 
         <nav className="flex items-center gap-1 text-sm">

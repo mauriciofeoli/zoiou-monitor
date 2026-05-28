@@ -2,6 +2,7 @@
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2, Plus, RefreshCw, Search } from "lucide-react";
+import { ZoiouWordmark } from "@/components/ZoiouWordmark";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Header } from "@/components/Header";
@@ -191,8 +192,10 @@ export default function Dashboard() {
 
       <footer className="border-t border-border mt-16">
         <div className="mx-auto max-w-6xl px-6 py-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-muted-foreground">
-          <p>
-            <span className="font-serif text-base text-foreground">zoiou</span> · seu olho nos preços
+          <p className="flex items-center gap-1">
+            <ZoiouWordmark size={16} className="text-foreground" />
+            <span className="text-success font-bold">.</span>
+            <span>· seu olho nos preços</span>
           </p>
           <div className="flex items-center gap-4">
             <a

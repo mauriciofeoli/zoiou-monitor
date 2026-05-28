@@ -1,6 +1,7 @@
 "use client";
 
-import { Eye, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
+import { ZoiouEyeMark, ZoiouWordmark } from "@/components/ZoiouWordmark";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/use-auth";
@@ -54,12 +55,11 @@ export default function Login() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="w-full max-w-sm">
-        <div className="mb-8 flex flex-col items-center gap-2">
-          <span className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-ink text-background">
-            <Eye className="h-6 w-6" strokeWidth={2.2} />
-          </span>
-          <span className="font-serif text-3xl">
-            zoiou<span className="text-success">.</span>
+        <div className="mb-8 flex flex-col items-center gap-3">
+          <ZoiouEyeMark size={52} />
+          <span className="flex items-baseline gap-0.5">
+            <ZoiouWordmark size={30} className="text-ink" />
+            <span className="text-success font-bold text-3xl leading-none">.</span>
           </span>
           <p className="text-sm text-muted-foreground">seu olho nos preços</p>
         </div>
