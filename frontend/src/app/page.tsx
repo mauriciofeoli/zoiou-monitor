@@ -1,21 +1,54 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
-import { Loader2, Plus, Search } from "lucide-react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Loader2, Plus, RefreshCw, Search } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Header } from "@/components/Header";
 import { CardProduto } from "@/components/CardProduto";
 import { AdicionarProdutoModal } from "@/components/AdicionarProdutoModal";
 import { useAuth } from "@/hooks/use-auth";
-import { listarProdutos } from "@/lib/api";
-import { formatarBRL } from "@/lib/utils";
+import { atualizarTodos, listarProdutos } from "@/lib/api";
+import { cn, formatarBRL } from "@/lib/utils";
+
+const COOLDOWN_MS = 3 * 60 * 1000;
+const STORAGE_KEY = "zoiou_atualizar_todos_ts";
 
 export default function Dashboard() {
   const { usuario, carregando: carregandoAuth } = useAuth();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [busca, setBusca] = useState("");
   const [modalAberto, setModalAberto] = useState(false);
+  const [atualizandoTodos, setAtualizandoTodos] = useState(false);
+  const [cooldownRestante, setCooldownRestante] = useState(0);
+
+  useEffect(() => {
+    const ts = Number(localStorage.getItem(STORAGE_KEY) ?? 0);
+    const restante = Math.max(0, COOLDOWN_MS - (Date.now() - ts));
+    if (restante > 0) setCooldownRestante(Math.ceil(restante / 1000));
+  }, []);
+
+  useEffect(() => {
+    if (cooldownRestante <= 0) return;
+    const id = setInterval(() => {
+      setCooldownRestante((s) => (s <= 1 ? 0 : s - 1));
+    }, 1000);
+    return () => clearInterval(id);
+  }, [cooldownRestante]);
+
+  async function handleAtualizarTodos() {
+    if (atualizandoTodos || cooldownRestante > 0) return;
+    setAtualizandoTodos(true);
+    try {
+      await atualizarTodos();
+      localStorage.setItem(STORAGE_KEY, String(Date.now()));
+      setCooldownRestante(Math.ceil(COOLDOWN_MS / 1000));
+      setTimeout(() => queryClient.invalidateQueries({ queryKey: ["produtos"] }), 4000);
+    } finally {
+      setAtualizandoTodos(false);
+    }
+  }
 
   useEffect(() => {
     if (!carregandoAuth && !usuario) {
@@ -84,13 +117,30 @@ export default function Dashboard() {
             )}
           </div>
 
-          <button
-            type="button"
-            onClick={() => setModalAberto(true)}
-            className="inline-flex items-center gap-2 rounded-full bg-foreground px-5 py-3 text-sm font-medium text-background hover:bg-foreground/90 transition-colors shadow-sm"
-          >
-            <Plus className="h-4 w-4" /> Adicionar produto
-          </button>
+          <div className="flex items-center gap-3">
+            {produtos.length > 0 && (
+              <button
+                type="button"
+                onClick={handleAtualizarTodos}
+                disabled={atualizandoTodos || cooldownRestante > 0}
+                className="inline-flex items-center gap-2 rounded-full border border-border px-5 py-3 text-sm font-medium hover:bg-card transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <RefreshCw className={cn("h-4 w-4", atualizandoTodos && "animate-spin")} />
+                {atualizandoTodos
+                  ? "Atualizando..."
+                  : cooldownRestante > 0
+                  ? `Atualizar todos (${Math.floor(cooldownRestante / 60)}:${String(cooldownRestante % 60).padStart(2, "0")})`
+                  : "Atualizar todos"}
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => setModalAberto(true)}
+              className="inline-flex items-center gap-2 rounded-full bg-foreground px-5 py-3 text-sm font-medium text-background hover:bg-foreground/90 transition-colors shadow-sm"
+            >
+              <Plus className="h-4 w-4" /> Adicionar produto
+            </button>
+          </div>
         </section>
 
         {produtos.length > 0 && (

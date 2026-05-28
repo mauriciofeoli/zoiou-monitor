@@ -30,6 +30,20 @@ async def _capturar_preco_background(produto_id: str, url: str) -> None:
         logger.error("Background preço %s: %s", url, exc)
 
 
+async def _atualizar_preco_forcado_background(produto_id: str, url: str) -> None:
+    """Captura e salva preço atual, independente de já haver registros."""
+    try:
+        db = await _db_direto()
+        preco = await extrair_preco(url)
+        if preco is not None:
+            await registrar_preco(db, produto_id, preco)
+            logger.info("BG atualizar-todos: R$ %.2f para %s", preco, url)
+        else:
+            logger.warning("BG atualizar-todos: preço não encontrado para %s", url)
+    except Exception as exc:
+        logger.error("BG atualizar-todos %s: %s", url, exc)
+
+
 async def _atualizar_metadados_background(produto_id: str, url: str, imagem_atual: str | None) -> None:
     """Atualiza nome e imagem via Playwright quando curl_cffi não conseguiu."""
     try:
@@ -150,6 +164,40 @@ async def adicionar_produto(
         ativo=True,
         monitorando_ha_dias=0,
     )
+
+
+@router.post("/atualizar-todos")
+async def atualizar_todos_agora(
+    background_tasks: BackgroundTasks,
+    usuario: dict = Depends(obter_usuario_autenticado),
+    db: AsyncClient = Depends(obter_cliente_rls),
+) -> dict[str, int | bool]:
+    """Dispara scraping em background para todos os produtos ativos do usuário."""
+    lista = (
+        await db.table("lista_desejos")
+        .select("produto_id")
+        .eq("usuario_id", usuario["id"])
+        .eq("ativo", True)
+        .execute()
+    )
+    db_s = await _db_direto()
+    total = 0
+    for item in lista.data or []:
+        produto = (
+            await db_s.table("produtos")
+            .select("url")
+            .eq("id", item["produto_id"])
+            .single()
+            .execute()
+        )
+        if produto.data:
+            background_tasks.add_task(
+                _atualizar_preco_forcado_background,
+                item["produto_id"],
+                produto.data["url"],
+            )
+            total += 1
+    return {"iniciado": True, "total": total}
 
 
 @router.post("/{produto_id}/atualizar", response_model=ProdutoResponse)

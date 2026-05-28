@@ -11,9 +11,10 @@
 
 - **Tipo:** SaaS gratuito (v1)
 - **Domínio:** zoiou.com.br
+- **Repositório:** github.com/mauriciofeoli/zoiou-monitor
 - **Linguagem principal:** Python (backend) + Next.js (frontend)
-- **Banco de dados:** Supabase (PostgreSQL)
-- **Deploy:** Railway
+- **Banco de dados:** Supabase (PostgreSQL + Auth)
+- **Deploy:** Railway (backend) + Vercel (frontend)
 
 ---
 
@@ -24,7 +25,8 @@
 |---|---|---|
 | Python | 3.12+ | Linguagem principal |
 | FastAPI | 0.111+ | API REST |
-| Playwright | 1.44+ | Scraping com renderização JS |
+| curl_cffi | 0.7+ | Scraping primário (rápido, sem JS) |
+| Playwright | 1.44+ | Scraping fallback (sites com JS) |
 | BeautifulSoup4 | 4.12+ | Extração de HTML |
 | APScheduler | 3.10+ | Agendamento de tarefas |
 | python-telegram-bot | 21+ | Notificações Telegram |
@@ -36,16 +38,22 @@
 ### Frontend
 | Tecnologia | Versão mínima | Uso |
 |---|---|---|
-| Next.js | 14+ | Framework web (App Router) |
+| Next.js | 15+ | Framework web (App Router) |
+| React | 19+ | UI |
 | TypeScript | 5+ | Tipagem |
-| Tailwind CSS | 3+ | Estilização |
-| shadcn/ui | latest | Componentes de UI |
+| Tailwind CSS | 4+ | Estilização |
+| @radix-ui/* | latest | Componentes primitivos de UI |
+| @tanstack/react-query | 5+ | Cache e sincronização de dados |
+| next-themes | 0.4+ | Dark mode (sistema/claro/escuro) |
+| react-hook-form + zod | latest | Formulários com validação |
 | Recharts | 2+ | Gráficos de histórico |
+| sonner | 2+ | Toasts de notificação |
+| @supabase/supabase-js | 2+ | Auth no cliente |
 
 ### Infraestrutura
 | Serviço | Uso |
 |---|---|
-| Supabase | PostgreSQL + Auth |
+| Supabase | PostgreSQL + Auth (JWT) |
 | Railway | Deploy do backend Python |
 | Vercel | Deploy do frontend Next.js |
 
@@ -58,41 +66,30 @@ zoiou/
 ├── backend/
 │   ├── app/
 │   │   ├── api/
-│   │   │   ├── __init__.py
-│   │   │   ├── routes/
-│   │   │   │   ├── __init__.py
-│   │   │   │   ├── produtos.py
-│   │   │   │   ├── historico.py
-│   │   │   │   └── usuarios.py
-│   │   │   └── deps.py              # dependências compartilhadas
+│   │   │   ├── deps.py              # obter_usuario_autenticado, obter_cliente_rls
+│   │   │   └── routes/
+│   │   │       ├── produtos.py      # CRUD da lista de desejos + scraping
+│   │   │       ├── historico.py     # histórico de preços
+│   │   │       └── usuarios.py      # perfil e preferências
 │   │   ├── core/
-│   │   │   ├── __init__.py
-│   │   │   ├── config.py            # configurações e env vars
-│   │   │   ├── security.py          # autenticação e tokens
-│   │   │   └── database.py          # conexão com Supabase
-│   │   ├── models/
-│   │   │   ├── __init__.py
-│   │   │   ├── produto.py
-│   │   │   ├── historico.py
-│   │   │   └── usuario.py
+│   │   │   ├── config.py            # configurações e env vars (pydantic-settings)
+│   │   │   ├── database.py          # conexão Supabase (service key)
+│   │   │   ├── limiter.py           # rate limiting via Starlette middleware
+│   │   │   └── security.py          # validação JWT + bearer scheme
 │   │   ├── schemas/
-│   │   │   ├── __init__.py
-│   │   │   ├── produto.py
-│   │   │   ├── historico.py
-│   │   │   └── usuario.py
+│   │   │   ├── produto.py           # ProdutoCreate (+ SSRF validator), ProdutoPatch, ProdutoResponse
+│   │   │   ├── historico.py         # HistoricoResponse, PontoHistorico
+│   │   │   └── usuario.py           # UsuarioResponse, PreferenciasUpdate (+ Telegram validator)
 │   │   ├── services/
-│   │   │   ├── __init__.py
-│   │   │   ├── scraper.py           # lógica de scraping
-│   │   │   ├── notificacao.py       # despacho de notificações
-│   │   │   ├── telegram.py          # integração Telegram
-│   │   │   ├── email.py             # integração Resend
-│   │   │   └── historico.py         # lógica de histórico e comparação
+│   │   │   ├── scraper.py           # extrair_preco, extrair_produto_completo, extrair_metadados_produto
+│   │   │   ├── historico.py         # buscar_ultimo_preco, buscar_ultimos_precos, registrar_preco
+│   │   │   ├── notificacao.py       # despacho de notificações (Telegram + e-mail)
+│   │   │   ├── telegram.py          # integração Telegram Bot API
+│   │   │   └── email.py             # integração Resend (com escape HTML)
 │   │   ├── scheduler/
-│   │   │   ├── __init__.py
-│   │   │   └── jobs.py              # tarefas agendadas
+│   │   │   └── jobs.py              # monitorar_todos_produtos (03:00 BRT) + _limpar_historico (dom 04:00)
 │   │   └── main.py                  # entry point FastAPI
 │   ├── tests/
-│   │   ├── __init__.py
 │   │   ├── test_scraper.py
 │   │   ├── test_historico.py
 │   │   └── test_notificacao.py
@@ -104,33 +101,42 @@ zoiou/
 ├── frontend/
 │   ├── src/
 │   │   ├── app/
-│   │   │   ├── layout.tsx
-│   │   │   ├── page.tsx             # dashboard principal
+│   │   │   ├── layout.tsx           # RootLayout com suppressHydrationWarning
+│   │   │   ├── providers.tsx        # ThemeProvider + QueryClientProvider + AuthProvider
+│   │   │   ├── globals.css          # variáveis CSS (light + dark) em oklch
+│   │   │   ├── page.tsx             # dashboard principal (lista de desejos)
+│   │   │   ├── login/
+│   │   │   │   └── page.tsx         # login com Supabase Auth
 │   │   │   ├── produtos/
 │   │   │   │   └── [id]/
-│   │   │   │       └── page.tsx     # detalhe do produto
+│   │   │   │       └── page.tsx     # detalhe do produto + gráfico de histórico
 │   │   │   └── configuracoes/
 │   │   │       └── page.tsx         # preferências de notificação
 │   │   ├── components/
-│   │   │   ├── ui/                  # componentes shadcn
-│   │   │   ├── ListaDesejos.tsx
-│   │   │   ├── GraficoHistorico.tsx
+│   │   │   ├── ui/                  # componentes Radix UI (shadcn pattern)
+│   │   │   ├── Header.tsx           # nav + dark mode toggle (Moon/Sun)
 │   │   │   ├── CardProduto.tsx
-│   │   │   └── BadgePrecoHistorico.tsx
+│   │   │   ├── GraficoHistorico.tsx
+│   │   │   ├── BadgePrecoHistorico.tsx
+│   │   │   └── AdicionarProdutoModal.tsx
+│   │   ├── hooks/
+│   │   │   └── use-auth.tsx         # AuthProvider + useAuth (Supabase session)
 │   │   ├── lib/
-│   │   │   ├── api.ts               # chamadas para o backend
+│   │   │   ├── api/
+│   │   │   │   └── index.ts         # chamadas REST ao backend + mapeamento snake→camel
+│   │   │   ├── supabase.ts          # createClient (anon key)
 │   │   │   └── utils.ts
 │   │   └── types/
-│   │       └── index.ts
+│   │       └── index.ts             # Produto, HistoricoProduto, Usuario, etc.
 │   ├── .env.local.example
 │   ├── next.config.ts
-│   ├── tailwind.config.ts
 │   └── package.json
 │
 ├── supabase/
 │   └── migrations/
 │       └── 001_initial.sql
 │
+├── ZOIOU_REFERENCE.md
 └── README.md
 ```
 
@@ -141,28 +147,27 @@ zoiou/
 ### Tabelas
 
 ```sql
--- Usuários
+-- Usuários (metadados além do Supabase Auth)
 create table usuarios (
-  id uuid primary key default gen_random_uuid(),
+  id uuid primary key references auth.users(id) on delete cascade,
   email text unique not null,
   telegram_id text,
-  whatsapp text,
   notif_telegram boolean default false,
-  notif_whatsapp boolean default false,
   notif_email boolean default true,
   criado_em timestamptz default now()
 );
 
--- Produtos monitorados
+-- Produtos monitorados (compartilhados entre usuários)
 create table produtos (
   id uuid primary key default gen_random_uuid(),
   nome text not null,
-  url text not null,
+  url text unique not null,
   loja text,
+  imagem text,
   criado_em timestamptz default now()
 );
 
--- Lista de desejos do usuário
+-- Lista de desejos do usuário (relação N:N com ativo/pausado)
 create table lista_desejos (
   id uuid primary key default gen_random_uuid(),
   usuario_id uuid references usuarios(id) on delete cascade,
@@ -172,7 +177,7 @@ create table lista_desejos (
   unique(usuario_id, produto_id)
 );
 
--- Histórico de preços (máximo 365 dias)
+-- Histórico de preços
 create table historico_precos (
   id uuid primary key default gen_random_uuid(),
   produto_id uuid references produtos(id) on delete cascade,
@@ -186,232 +191,170 @@ create index idx_lista_ativo on lista_desejos(ativo) where ativo = true;
 ```
 
 ### Regras de retenção
-- Registros com `capturado_em < now() - interval '365 days'` devem ser deletados automaticamente.
-- Usar uma função agendada no Supabase ou no scheduler do backend para isso.
+- Registros com `capturado_em < now() - interval '365 days'` são deletados automaticamente pelo scheduler (domingo 04:00 BRT).
+- O histórico só é limpo quando o produto é **removido** da lista pelo usuário — a retenção de 365 dias serve como teto máximo.
 
 ---
 
-## 5. Regras de Negócio
+## 5. Autenticação e Segurança
 
-1. **Sem spam** — só notifica se o preço mudou em relação ao último registro.
-2. **Preço histórico** — quando o preço capturado for menor que todos os registros dos últimos 365 dias, marcar como `🏆 Preço histórico`.
-3. **Comparação justa** — comparar sempre com o último preço registrado, nunca com a média.
-4. **Produto ativo** — scraper só processa produtos com `lista_desejos.ativo = true`.
-5. **Histórico máximo** — deletar registros com mais de 365 dias automaticamente.
-6. **Notificação opcional** — usuário pode optar por não receber notificação nenhuma e só consultar no dashboard.
-7. **Links diretos** — nenhum link deve ser substituído por link de afiliado na v1.
+### Supabase Auth + RLS
 
----
+O backend usa um padrão de **cliente duplo**:
 
-## 6. Clean Code
+| Cliente | Chave | Uso |
+|---|---|---|
+| `obter_cliente_rls` | `SUPABASE_ANON_KEY` + JWT do usuário | Leituras/escritas em `lista_desejos` e `usuarios` — RLS aplicado pelo banco |
+| `obter_cliente` (service key) | `SUPABASE_SERVICE_KEY` | Escritas em `produtos` e `historico_precos` (tabelas compartilhadas sem INSERT policy para anon) |
 
-### Python
-
-- Seguir **PEP 8** sem exceções.
-- Usar **type hints** em todas as funções e métodos.
-- Máximo de **50 linhas por função**. Se passar, quebrar em funções menores.
-- Máximo de **300 linhas por arquivo**. Se passar, dividir em módulos.
-- Nomes de variáveis e funções em **snake_case**, sempre em **português**.
-- Nomes de classes em **PascalCase**.
-- Toda função pública deve ter **docstring** curta explicando o que faz.
-- Nunca usar `except Exception` genérico — capturar exceções específicas.
-- Preferir **retorno explícito** a side effects.
-- Nunca comentar código morto — deletar.
-
-```python
-# ✅ correto
-async def buscar_preco_produto(produto_id: str) -> float | None:
-    """Busca o preço atual de um produto pelo seu ID."""
-    ...
-
-# ❌ errado
-async def getBuscaPreco(id):
-    ...
-```
-
-### TypeScript / Next.js
-
-- Usar **TypeScript strict mode** sempre.
-- Nomes de componentes em **PascalCase**.
-- Nomes de funções e variáveis em **camelCase**.
-- Toda prop de componente deve ter **interface** ou **type** explícito.
-- Nunca usar `any` — usar `unknown` se necessário.
-- Preferir **Server Components** por padrão; usar `"use client"` só quando necessário.
-- Não deixar `console.log` em produção.
-
-```typescript
-// ✅ correto
-interface CardProdutoProps {
-  nome: string
-  precoAtual: number
-  precoAnterior: number
-}
-
-export function CardProduto({ nome, precoAtual, precoAnterior }: CardProdutoProps) {
-  ...
-}
-
-// ❌ errado
-export function CardProduto(props: any) {
-  ...
-}
-```
-
----
-
-## 7. Segurança
-
-### Variáveis de ambiente
-- **Nunca** commitar `.env` no repositório.
-- Sempre manter `.env.example` atualizado com todas as chaves necessárias (sem valores).
-- Usar `python-dotenv` no backend e variáveis de ambiente do Vercel/Railway no deploy.
-
-```
-# .env.example
-SUPABASE_URL=
-SUPABASE_SERVICE_KEY=
-TELEGRAM_BOT_TOKEN=
-RESEND_API_KEY=
-SECRET_KEY=
-```
-
-### Autenticação
-- Usar **Supabase Auth** para autenticação de usuários.
-- Tokens JWT validados em toda rota protegida da API.
-- Nunca expor a `SUPABASE_SERVICE_KEY` no frontend — usar apenas a `SUPABASE_ANON_KEY` com Row Level Security (RLS) ativado.
+Nunca usar a service key em rotas que aceitam parâmetros controlados pelo usuário sem validação prévia.
 
 ### Row Level Security (RLS)
-- Ativar RLS em **todas** as tabelas do Supabase.
-- Usuário só pode ler e escrever seus próprios dados.
+
+RLS ativo em **todas** as tabelas. Exemplo:
 
 ```sql
--- Exemplo: usuário só vê sua própria lista
 alter table lista_desejos enable row level security;
 
 create policy "usuario_ve_propria_lista"
   on lista_desejos for select
   using (auth.uid() = usuario_id);
+
+create policy "usuario_gerencia_propria_lista"
+  on lista_desejos for all
+  using (auth.uid() = usuario_id);
 ```
 
-### API
-- Todas as rotas que modificam dados exigem autenticação.
-- Validar e sanitizar toda entrada com **Pydantic** no backend.
-- Rate limiting nas rotas de scraping para evitar abuso.
-- CORS configurado para aceitar apenas o domínio do frontend.
+### Variáveis de ambiente
 
-### Scraping
-- Nunca salvar credenciais de loja.
-- User-agent rotacionado para evitar bloqueio.
-- Timeout máximo de 15 segundos por request de scraping.
-- Tratar erros de scraping sem expor stack trace ao usuário.
+```
+# backend/.env.example
+SUPABASE_URL=
+SUPABASE_SERVICE_KEY=
+SUPABASE_ANON_KEY=
+TELEGRAM_BOT_TOKEN=
+RESEND_API_KEY=
+AMBIENTE=development   # ou production
+FRONTEND_URL=          # usado no CORS em produção
+
+# frontend/.env.local.example
+NEXT_PUBLIC_API_URL=
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+```
+
+### Proteções implementadas
+
+- **SSRF**: `ProdutoCreate.bloquear_url_privada` rejeita IPs privados/localhost via `ipaddress.ip_address().is_global`
+- **HTML injection**: `email.py` usa `html.escape()` em nome, loja e URL antes de montar o template
+- **Rate limiting**: `RateLimitMiddleware` (Starlette BaseHTTPMiddleware) — 10 req/min em `POST /api/produtos`, 6 req/min em `POST /api/produtos/{id}/atualizar`, por IP (`X-Forwarded-For` para Railway)
+- **Telegram ID**: `PreferenciasUpdate.validar_telegram_id` aceita apenas `@usuario` ou ID numérico
+- **CORS**: aceita apenas o domínio do frontend configurado em `FRONTEND_URL` (produção) ou localhost (desenvolvimento)
 
 ---
 
-## 8. Padrões de API
+## 6. Padrões de API
 
-### Convenções REST
+### Endpoints
 
 ```
-GET    /api/produtos              # lista produtos da lista de desejos
-POST   /api/produtos              # adiciona produto à lista
-DELETE /api/produtos/{id}         # remove produto da lista
-PATCH  /api/produtos/{id}         # ativa/desativa monitoramento
+GET    /api/produtos                     # lista produtos da lista de desejos
+POST   /api/produtos                     # adiciona produto à lista
+DELETE /api/produtos/{id}                # remove produto da lista
+PATCH  /api/produtos/{id}                # ativa/desativa monitoramento
 
-GET    /api/produtos/{id}/historico  # histórico de preços de um produto
-GET    /api/usuarios/me              # dados do usuário autenticado
-PATCH  /api/usuarios/me/preferencias # atualiza preferências de notificação
+POST   /api/produtos/{id}/atualizar      # força scraping imediato
+GET    /api/produtos/{id}/historico      # histórico de preços
+
+GET    /api/usuarios/me                  # dados do usuário autenticado
+PATCH  /api/usuarios/me/preferencias     # atualiza preferências de notificação
+
+GET    /health                           # health check
 ```
 
 ### Formato de resposta
 
-```json
-{
-  "data": { ... },
-  "error": null
-}
-```
+A API retorna os campos diretos (sem envelope `data/error`) — exceto o handler genérico de 500:
 
 ```json
-{
-  "data": null,
-  "error": {
-    "code": "PRODUTO_NAO_ENCONTRADO",
-    "message": "Produto não encontrado."
-  }
-}
+// sucesso: retorna o objeto diretamente
+{ "id": "...", "nome": "...", "preco_atual": 1850.00, ... }
+
+// erro 500 (handler genérico)
+{ "data": null, "error": { "code": "ERRO_INTERNO", "message": "Erro interno." } }
 ```
 
 ### Códigos HTTP
 - `200` — sucesso
 - `201` — criado com sucesso
+- `204` — deletado com sucesso (sem corpo)
 - `400` — erro de validação
 - `401` — não autenticado
-- `403` — sem permissão
 - `404` — não encontrado
-- `422` — entidade não processável
+- `422` — entidade não processável (Pydantic)
+- `429` — rate limit atingido
 - `500` — erro interno (nunca expor detalhes ao cliente)
 
 ---
 
-## 9. Scraper
+## 7. Regras de Negócio
 
-### Princípios
-- Cada loja tem seu próprio extrator de preço isolado em uma função.
-- A função de scraping recebe uma URL e retorna um `float | None`.
-- Nunca misturar lógica de scraping com lógica de negócio.
-- Usar Playwright para sites com JavaScript e `httpx + BeautifulSoup4` para sites estáticos.
-
-### Estrutura do scraper
-
-```python
-async def extrair_preco(url: str) -> float | None:
-    """Extrai o preço de um produto a partir da URL da loja."""
-    try:
-        async with async_playwright() as p:
-            browser = await p.chromium.launch(headless=True)
-            page = await browser.new_page()
-            await page.goto(url, timeout=15000)
-            preco_texto = await page.locator(".preco-atual").inner_text()
-            return parsear_preco(preco_texto)
-    except Exception as e:
-        logger.error(f"Erro ao extrair preço de {url}: {e}")
-        return None
-
-def parsear_preco(texto: str) -> float:
-    """Converte string de preço para float."""
-    limpo = texto.replace("R$", "").replace(".", "").replace(",", ".").strip()
-    return float(limpo)
-```
+1. **Sem spam** — só notifica se o preço mudou em relação ao último registro.
+2. **Preço histórico** — quando o preço capturado for menor que todos os registros dos últimos 365 dias, marcar como `🏆 Preço histórico`.
+3. **Comparação justa** — comparar sempre com o último preço registrado, nunca com a média.
+4. **Produto ativo** — scraper só processa produtos com `lista_desejos.ativo = true`.
+5. **Retenção de histórico** — máximo 365 dias; limpeza automática semanal. O histórico pertence ao produto, não ao usuário — dura até o produto ser removido da lista ou completar 365 dias.
+6. **Produto compartilhado** — a tabela `produtos` é compartilhada. Se dois usuários monitoram a mesma URL, o produto existe uma única vez. A `lista_desejos` é a relação por usuário.
+7. **Notificação opcional** — usuário pode desativar Telegram e/ou e-mail e só consultar no dashboard.
+8. **Links diretos** — nenhum link deve ser substituído por link de afiliado na v1.
 
 ---
 
-## 10. Agendador
+## 8. Scraper
 
-- Rodar o ciclo de monitoramento **uma vez por dia**, de madrugada (ex: 03:00 BRT).
-- O job de limpeza de histórico roda **uma vez por semana**.
+### Estratégia em dois estágios
+
+O path síncrono (adição de produto) usa apenas **curl_cffi** — rápido, sem abrir browser. Se não conseguir preço ou metadados, **Playwright** é disparado em background após a resposta.
+
+```python
+# Estágio 1 (síncrono, curl_cffi): retorna rápido
+dados = await extrair_produto_completo(url, usar_playwright=False)
+
+# Estágio 2 (background, Playwright): preenche o que faltou
+background_tasks.add_task(_capturar_preco_background, produto_id, url)
+```
+
+### Princípios
+
+- A função de scraping recebe uma URL e retorna `float | None`.
+- Nunca misturar lógica de scraping com lógica de negócio.
+- Timeout máximo de 15 segundos por request.
+- Tratar erros de scraping sem expor stack trace ao usuário.
+- Nunca salvar credenciais de loja.
+
+---
+
+## 9. Agendador
+
+- **Monitoramento**: todos os produtos ativos, **03:00 BRT** diariamente.
+- **Limpeza**: histórico com mais de 365 dias, **domingo 04:00 BRT**.
 - Nunca bloquear o event loop com operações síncronas dentro do scheduler.
 
 ```python
 scheduler.add_job(
     monitorar_todos_produtos,
-    trigger="cron",
-    hour=3,
-    minute=0,
-    timezone="America/Sao_Paulo"
+    trigger=CronTrigger(hour=3, minute=0, timezone="America/Sao_Paulo"),
 )
 
 scheduler.add_job(
-    limpar_historico_antigo,
-    trigger="cron",
-    day_of_week="sun",
-    hour=4,
-    timezone="America/Sao_Paulo"
+    _limpar_historico,
+    trigger=CronTrigger(day_of_week="sun", hour=4, timezone="America/Sao_Paulo"),
 )
 ```
 
 ---
 
-## 11. Notificações
+## 10. Notificações
 
 ### Formato da mensagem Telegram
 
@@ -438,14 +381,66 @@ R$ 1.690 na Kabum
 
 ### Regras
 - Mensagem enviada apenas quando o preço mudou.
-- Se o preço bater o mínimo histórico, usar o formato especial com `🏆`.
+- Se o preço bater o mínimo histórico (365 dias), usar o formato especial com `🏆`.
 - Nunca enviar stack trace ou mensagem técnica ao usuário.
+- Escapar caracteres especiais do Markdown V2 em nome e URL do produto.
+
+---
+
+## 11. Clean Code
+
+### Python
+
+- Seguir **PEP 8** sem exceções.
+- Usar **type hints** em todas as funções e métodos.
+- Máximo de **50 linhas por função**. Se passar, quebrar em funções menores.
+- Máximo de **300 linhas por arquivo**. Se passar, dividir em módulos.
+- Nomes de variáveis e funções em **snake_case**, sempre em **português**.
+- Nomes de classes em **PascalCase**.
+- Toda função pública deve ter **docstring** curta explicando o que faz.
+- Nunca usar `except Exception` genérico — capturar exceções específicas.
+- Preferir **retorno explícito** a side effects.
+
+```python
+# ✅ correto
+async def buscar_preco_produto(produto_id: str) -> float | None:
+    """Busca o preço atual de um produto pelo seu ID."""
+    ...
+
+# ❌ errado
+async def getBuscaPreco(id):
+    ...
+```
+
+### TypeScript / Next.js
+
+- Usar **TypeScript strict mode** sempre.
+- Nomes de componentes em **PascalCase**.
+- Nomes de funções e variáveis em **camelCase**.
+- Toda prop de componente deve ter **interface** ou **type** explícito.
+- Nunca usar `any` — usar `unknown` se necessário.
+- Preferir **Server Components** por padrão; usar `"use client"` só quando necessário.
+- Não deixar `console.log` em produção.
+
+```typescript
+// ✅ correto
+interface CardProdutoProps {
+  nome: string
+  precoAtual: number | null
+  precoAnterior: number | null
+}
+
+export function CardProduto({ nome, precoAtual, precoAnterior }: CardProdutoProps) { ... }
+
+// ❌ errado
+export function CardProduto(props: any) { ... }
+```
 
 ---
 
 ## 12. Testes
 
-- Todo service deve ter testes unitários correspondentes em `tests/`.
+- Todo service deve ter testes unitários em `tests/`.
 - Usar **pytest** com **pytest-asyncio** para testes assíncronos.
 - Mockar chamadas externas (Playwright, Supabase, Telegram) nos testes.
 - Cobertura mínima: **70%** nas funções de `services/`.
@@ -462,63 +457,23 @@ async def test_detectar_preco_historico():
 
 ## 13. Git e Versionamento
 
-### Branches
-- `main` — produção, sempre estável
-- `develop` — integração de features
-- `feature/nome-da-feature` — desenvolvimento de funcionalidade
-- `fix/nome-do-bug` — correção de bug
-
 ### Commits (Conventional Commits)
 ```
 feat: adiciona scraper para Kabum
 fix: corrige parsing de preço com vírgula
 chore: atualiza dependências
-docs: atualiza README com instruções de setup
+docs: atualiza ZOIOU_REFERENCE.md
 refactor: separa lógica de notificação em service próprio
 test: adiciona testes para service de histórico
 ```
 
 ### Regras
-- Nunca fazer commit direto em `main`.
 - Todo commit deve ser atômico — uma mudança por commit.
-- Nunca commitar arquivos `.env`, `__pycache__`, `.DS_Store`.
+- Nunca commitar arquivos `.env`, `__pycache__`, `.DS_Store`, `venv/`, `.next/`.
 
 ---
 
-## 14. .gitignore
-
-```
-# Python
-__pycache__/
-*.py[cod]
-*.pyo
-.env
-.venv/
-venv/
-dist/
-build/
-*.egg-info/
-
-# Node
-node_modules/
-.next/
-.env.local
-.env.production
-
-# Sistema
-.DS_Store
-Thumbs.db
-
-# IDE
-.vscode/
-.idea/
-```
-
----
-
-## 15. Fora do Escopo (v1)
-
-As funcionalidades abaixo **não devem ser implementadas** na v1:
+## 14. Fora do Escopo (v1)
 
 - Links de afiliado
 - Canal público de promoções no Telegram
@@ -528,6 +483,7 @@ As funcionalidades abaixo **não devem ser implementadas** na v1:
 - Monetização de qualquer tipo
 - Alertas por preço-alvo definido pelo usuário
 - Integração com Zoom, Buscapé ou qualquer agregador
+- Notificações via WhatsApp
 
 ---
 

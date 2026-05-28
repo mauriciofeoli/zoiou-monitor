@@ -11,6 +11,7 @@ from starlette.types import ASGIApp
 # POST /api/produtos/{id}/atualizar → 6/min
 _REGRAS: list[tuple[re.Pattern[str], str, int]] = [
     (re.compile(r"^/api/produtos$"), "POST", 10),
+    (re.compile(r"^/api/produtos/atualizar-todos$"), "POST", 2),
     (re.compile(r"^/api/produtos/[^/]+/atualizar$"), "POST", 6),
 ]
 

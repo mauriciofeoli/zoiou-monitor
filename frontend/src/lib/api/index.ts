@@ -116,6 +116,10 @@ export async function atualizarAgora(id: string): Promise<Produto> {
   return mapearProduto(dado);
 }
 
+export async function atualizarTodos(): Promise<{ iniciado: boolean; total: number }> {
+  return post<{ iniciado: boolean; total: number }>("/api/produtos/atualizar-todos", {});
+}
+
 export async function listarProdutos(): Promise<Produto[]> {
   const dados = await get<Record<string, unknown>[]>("/api/produtos");
   return dados.map(mapearProduto);
