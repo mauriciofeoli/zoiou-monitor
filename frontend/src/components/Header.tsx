@@ -73,7 +73,9 @@ export function Header() {
                 title={usuario.email}
                 className="hidden sm:flex h-7 w-7 items-center justify-center rounded-full bg-secondary text-xs font-medium text-foreground select-none"
               >
-                {usuario.email.split("@")[0].split(".").slice(0, 2).map((p: string) => p[0]).join("").toUpperCase() || usuario.email.slice(0, 2).toUpperCase()}
+                {usuario.email
+                  ? usuario.email.split("@")[0].split(".").slice(0, 2).map((p: string) => p[0]).join("").toUpperCase() || usuario.email.slice(0, 2).toUpperCase()
+                  : "?"}
               </span>
               <button
                 type="button"
