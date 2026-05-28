@@ -13,6 +13,8 @@ logger = logging.getLogger(__name__)
 
 _IMPERSONATE = ["chrome124", "chrome123", "chrome120"]
 _SCRAPER_API_KEY = os.getenv("SCRAPER_API_KEY")
+_CF_WORKER_URL = os.getenv("CF_WORKER_URL")
+_CF_WORKER_TOKEN = os.getenv("CF_WORKER_TOKEN")
 
 # Padrão de preço BR: 1.099,99 ou 999,99
 _RE_PRECO_BR = re.compile(r"\b\d{1,3}(?:\.\d{3})*,\d{2}\b")
@@ -220,6 +222,24 @@ _HEADERS_BR = {
 }
 
 
+async def _buscar_html_worker(url: str) -> str | None:
+    """Busca HTML via Cloudflare Worker — bypassa bloqueios de IP de data center."""
+    if not _CF_WORKER_URL or not _CF_WORKER_TOKEN:
+        return None
+    try:
+        async with httpx.AsyncClient(timeout=30) as client:
+            r = await client.get(
+                _CF_WORKER_URL,
+                params={"url": url, "token": _CF_WORKER_TOKEN},
+            )
+            logger.info("CF Worker → HTTP %d para %s", r.status_code, url)
+            if r.status_code == 200:
+                return r.text
+    except Exception as exc:
+        logger.warning("CF Worker falhou para %s: %s", url, exc)
+    return None
+
+
 async def _buscar_html_scraper_api(url: str) -> str | None:
     """Busca HTML via ScraperAPI — bypassa bloqueios de IP de data center."""
     if not _SCRAPER_API_KEY:
@@ -283,7 +303,7 @@ async def _buscar_html_playwright(url: str) -> str | None:
 async def extrair_preco(url: str) -> float | None:
     """Extrai o preço de um produto. Tenta ScraperAPI (se configurado), curl_cffi, Playwright."""
     try:
-        for buscar in [_buscar_html_scraper_api, _buscar_html_cffi, _buscar_html_playwright]:
+        for buscar in [_buscar_html_worker, _buscar_html_scraper_api, _buscar_html_cffi, _buscar_html_playwright]:
             html = await buscar(url)
             if html:
                 preco = _extrair_preco_de_sopa(BeautifulSoup(html, "html.parser"))
@@ -299,7 +319,7 @@ async def extrair_preco(url: str) -> float | None:
 
 async def extrair_metadados_produto(url: str) -> dict:
     """Extrai nome, loja e imagem do produto."""
-    for buscar in [_buscar_html_scraper_api, _buscar_html_cffi, _buscar_html_playwright]:
+    for buscar in [_buscar_html_worker, _buscar_html_scraper_api, _buscar_html_cffi, _buscar_html_playwright]:
         html = await buscar(url)
         if html:
             meta = _extrair_metadados_de_sopa(BeautifulSoup(html, "html.parser"), url)
@@ -319,8 +339,8 @@ async def extrair_produto_completo(url: str, *, usar_playwright: bool = True) ->
     meta: dict = {"nome": "", "loja": loja, "imagem": ""}
     preco: float | None = None
 
-    # 1ª tentativa: ScraperAPI (se configurado) ou curl_cffi
-    html = await _buscar_html_scraper_api(url) or await _buscar_html_cffi(url)
+    # 1ª tentativa: Worker > ScraperAPI > curl_cffi
+    html = await _buscar_html_worker(url) or await _buscar_html_scraper_api(url) or await _buscar_html_cffi(url)
     if html:
         sopa = BeautifulSoup(html, "html.parser")
         meta = _extrair_metadados_de_sopa(sopa, url)
