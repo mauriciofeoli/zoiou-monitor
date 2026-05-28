@@ -56,7 +56,7 @@ export default function Login() {
     <div className="flex min-h-screen flex-col md:flex-row">
 
       {/* Coluna esquerda — Landing */}
-      <div className="flex items-center justify-center border-b border-border md:border-b-0 md:border-r md:w-[55%] px-10 py-12 md:px-16 md:py-20">
+      <div className="flex items-center justify-center border-b border-border/40 md:border-b-0 md:border-r md:border-r-border/40 md:w-1/2 px-10 py-12 md:px-16 md:py-20">
         <div className="w-full max-w-md">
           <div className="flex items-baseline gap-0.5 mb-12">
             <ZoiouWordmark size={22} className="text-ink" />
@@ -91,7 +91,7 @@ export default function Login() {
       </div>
 
       {/* Coluna direita — Login (inalterado) */}
-      <div className="flex items-center justify-center md:w-[45%] px-6 py-12">
+      <div className="flex items-center justify-center md:w-1/2 px-6 py-12">
         <div className="w-full max-w-sm">
           <div className="mb-8 flex flex-col items-center gap-2">
             <span className="flex items-baseline gap-0.5">
