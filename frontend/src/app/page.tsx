@@ -69,9 +69,8 @@ export default function Dashboard() {
               Sua lista de desejos
             </p>
             <h1 className="font-serif text-xl md:text-2xl text-ink leading-snug">
-              De olho em{" "}
               <span className="text-success">{ativos.length}</span>{" "}
-              produto{ativos.length !== 1 ? "s" : ""} em{" "}
+              produto{ativos.length !== 1 ? "s" : ""} monitorado{ativos.length !== 1 ? "s" : ""} em{" "}
               <span>{lojas.size}</span>{" "}
               loja{lojas.size !== 1 ? "s" : ""}.
             </h1>
