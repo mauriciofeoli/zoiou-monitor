@@ -32,28 +32,40 @@ def parsear_preco(texto: str) -> float:
 
 
 def _preco_json(valor) -> float | None:
-    """Converte valor de JSON-LD para float sem destruir números US-format.
-    JSON-LD usa float padrão (699.98), não BR (699,98). parsear_preco quebraria isso.
-    """
+    """Converte valor de meta/JSON-LD para float, suportando formatos BR e US."""
     if isinstance(valor, (int, float)):
         v = float(valor)
         return v if _PRECO_MIN < v < _PRECO_MAX else None
     if isinstance(valor, str):
         s = valor.strip()
-        if "," in s:
-            # Formato BR — pode usar parsear_preco
-            try:
-                v = parsear_preco(s)
-                return v if _PRECO_MIN < v < _PRECO_MAX else None
-            except ValueError:
-                return None
-        else:
-            # Formato US/numérico — converte direto
-            try:
-                v = float(re.sub(r"[^\d.]", "", s))
-                return v if _PRECO_MIN < v < _PRECO_MAX else None
-            except ValueError:
-                return None
+        has_comma = "," in s
+        has_dot = "." in s
+        try:
+            if has_comma and has_dot:
+                # Ambos presentes — o separador mais à direita é o decimal.
+                # "R$ 30,407.19" (US/híbrido) → ponto mais à direita → milhar=vírgula, decimal=ponto
+                # "30.407,19" (BR)             → vírgula mais à direita → milhar=ponto, decimal=vírgula
+                if s.rfind(".") > s.rfind(","):
+                    clean = re.sub(r"[^\d.]", "", s.replace(",", ""))
+                else:
+                    clean = re.sub(r"[^\d.]", "", s.replace(".", "").replace(",", "."))
+            elif has_comma:
+                # Só vírgula — BR sem separador de milhar (ex: "30407,19")
+                clean = re.sub(r"[^\d.]", "", s.replace(",", "."))
+            elif re.match(r"^\d{1,3}(\.\d{3})+\.\d{2}$", s):
+                # BR malformado: ponto como milhar E decimal (ex: "30.407.19")
+                digits = re.sub(r"[^\d]", "", s)
+                clean = digits[:-2] + "." + digits[-2:]
+            elif re.match(r"^\d{1,3}(\.\d{3})+$", s):
+                # BR sem centavos, ponto como milhar (ex: "30.407")
+                clean = re.sub(r"[^\d]", "", s)
+            else:
+                # US/numérico direto (ex: "30407.19", "699.98")
+                clean = re.sub(r"[^\d.]", "", s)
+            v = float(clean)
+            return v if _PRECO_MIN < v < _PRECO_MAX else None
+        except ValueError:
+            return None
     return None
 
 
