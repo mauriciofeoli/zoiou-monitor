@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request, status
 from supabase import AsyncClient
 
-from app.api.deps import obter_cliente, obter_usuario_autenticado
+from app.api.deps import obter_cliente_rls, obter_usuario_autenticado
 from app.core.database import obter_cliente as _db_direto
 from app.core.limiter import limiter
 from app.schemas.produto import ProdutoCreate, ProdutoPatch, ProdutoResponse
@@ -49,7 +49,7 @@ async def _atualizar_metadados_background(produto_id: str, url: str, imagem_atua
 @router.get("", response_model=list[ProdutoResponse])
 async def listar_produtos(
     usuario: dict = Depends(obter_usuario_autenticado),
-    db: AsyncClient = Depends(obter_cliente),
+    db: AsyncClient = Depends(obter_cliente_rls),
 ) -> list[ProdutoResponse]:
     """Lista todos os produtos ativos e pausados da lista de desejos do usuário."""
     resposta = (
@@ -93,13 +93,15 @@ async def adicionar_produto(
     payload: ProdutoCreate,
     background_tasks: BackgroundTasks,
     usuario: dict = Depends(obter_usuario_autenticado),
-    db: AsyncClient = Depends(obter_cliente),
+    db: AsyncClient = Depends(obter_cliente_rls),
 ) -> ProdutoResponse:
     """Adiciona um produto à lista de desejos. Responde rápido; preço/metadados
     são completados em background se curl_cffi não conseguir imediatamente."""
     url = str(payload.url)
+    # db_s: service key para escritas em produtos e historico_precos (sem policy de INSERT para anon)
+    db_s = await _db_direto()
 
-    existente = await db.table("produtos").select("id, nome, url, loja, imagem").eq("url", url).limit(1).execute()
+    existente = await db_s.table("produtos").select("id, nome, url, loja, imagem").eq("url", url).limit(1).execute()
 
     if existente.data:
         produto_id = existente.data[0]["id"]
@@ -108,7 +110,7 @@ async def adicionar_produto(
         # Somente curl_cffi no path síncrono — rápido, sem Playwright
         dados = await extrair_produto_completo(url, usar_playwright=False)
         novo = (
-            await db.table("produtos")
+            await db_s.table("produtos")
             .insert({
                 "url": url,
                 "nome": dados["nome"] or url,
@@ -122,9 +124,9 @@ async def adicionar_produto(
              "loja": dados["loja"], "imagem": dados["imagem"]}
 
         if dados.get("preco") is not None:
-            await registrar_preco(db, produto_id, dados["preco"])
+            await registrar_preco(db_s, produto_id, dados["preco"])
 
-    # Adiciona à lista do usuário
+    # lista_desejos: RLS client — banco valida que usuario_id = auth.uid()
     await db.table("lista_desejos").upsert(
         {"usuario_id": usuario["id"], "produto_id": produto_id, "ativo": True},
         on_conflict="usuario_id,produto_id",
@@ -159,9 +161,12 @@ async def atualizar_preco_agora(
     request: Request,
     produto_id: str,
     usuario: dict = Depends(obter_usuario_autenticado),
-    db: AsyncClient = Depends(obter_cliente),
+    db: AsyncClient = Depends(obter_cliente_rls),
 ) -> ProdutoResponse:
     """Dispara o scraping imediato de um produto e atualiza nome/imagem se ainda não tiver."""
+    db_s = await _db_direto()
+
+    # lista_desejos: RLS client — banco rejeita se não for do usuário
     lista = (
         await db.table("lista_desejos")
         .select("ativo")
@@ -174,7 +179,7 @@ async def atualizar_preco_agora(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Produto não encontrado.")
 
     produto_db = (
-        await db.table("produtos")
+        await db_s.table("produtos")
         .select("id, nome, url, loja, imagem")
         .eq("id", produto_id)
         .single()
@@ -183,11 +188,11 @@ async def atualizar_preco_agora(
     p = produto_db.data
     url = p["url"]
 
-    # Atualiza metadados se o nome ainda é a URL
+    # Atualiza metadados se o nome ainda é a URL (escrita em produtos → service key)
     if not p["nome"] or p["nome"] == url:
         metadados = await extrair_metadados_produto(url)
         if metadados.get("nome"):
-            await db.table("produtos").update({
+            await db_s.table("produtos").update({
                 "nome": metadados["nome"],
                 "imagem": metadados.get("imagem") or p.get("imagem"),
             }).eq("id", produto_id).execute()
@@ -196,7 +201,7 @@ async def atualizar_preco_agora(
 
     preco_novo = await extrair_preco(url)
     if preco_novo is not None:
-        await registrar_preco(db, produto_id, preco_novo)
+        await registrar_preco(db_s, produto_id, preco_novo)
 
     preco_atual, preco_anterior = await buscar_ultimos_precos(db, produto_id)
     ativo = lista.data[0]["ativo"]
@@ -218,7 +223,7 @@ async def atualizar_preco_agora(
 async def remover_produto(
     produto_id: str,
     usuario: dict = Depends(obter_usuario_autenticado),
-    db: AsyncClient = Depends(obter_cliente),
+    db: AsyncClient = Depends(obter_cliente_rls),
 ) -> None:
     """Remove um produto da lista de desejos do usuário."""
     resposta = (
@@ -237,15 +242,17 @@ async def atualizar_produto(
     produto_id: str,
     payload: ProdutoPatch,
     usuario: dict = Depends(obter_usuario_autenticado),
-    db: AsyncClient = Depends(obter_cliente),
+    db: AsyncClient = Depends(obter_cliente_rls),
 ) -> ProdutoResponse:
     """Ativa ou desativa o monitoramento de um produto."""
+    db_s = await _db_direto()
+
     await db.table("lista_desejos").update({"ativo": payload.ativo}).eq(
         "produto_id", produto_id
     ).eq("usuario_id", usuario["id"]).execute()
 
     produto_db = (
-        await db.table("produtos")
+        await db_s.table("produtos")
         .select("id, nome, url, loja, imagem")
         .eq("id", produto_id)
         .single()

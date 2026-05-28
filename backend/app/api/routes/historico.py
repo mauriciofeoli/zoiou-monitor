@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from supabase import AsyncClient
 
-from app.api.deps import obter_cliente, obter_usuario_autenticado
+from app.api.deps import obter_cliente_rls, obter_usuario_autenticado
 from app.schemas.historico import HistoricoResponse, PontoHistorico
 from app.services.historico import buscar_historico_produto, calcular_estatisticas
 
@@ -12,7 +12,7 @@ router = APIRouter(prefix="/produtos", tags=["historico"])
 async def obter_historico(
     produto_id: str,
     usuario: dict = Depends(obter_usuario_autenticado),
-    db: AsyncClient = Depends(obter_cliente),
+    db: AsyncClient = Depends(obter_cliente_rls),
 ) -> HistoricoResponse:
     """Retorna o histórico de preços de um produto da lista do usuário."""
     # Verifica se o produto pertence ao usuário

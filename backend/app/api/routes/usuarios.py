@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from supabase import AsyncClient
 
-from app.api.deps import obter_cliente, obter_usuario_autenticado
+from app.api.deps import obter_cliente_rls, obter_usuario_autenticado
 from app.schemas.usuario import PreferenciasUpdate, UsuarioResponse
 
 router = APIRouter(prefix="/usuarios", tags=["usuarios"])
@@ -10,7 +10,7 @@ router = APIRouter(prefix="/usuarios", tags=["usuarios"])
 @router.get("/me", response_model=UsuarioResponse)
 async def obter_perfil(
     usuario: dict = Depends(obter_usuario_autenticado),
-    db: AsyncClient = Depends(obter_cliente),
+    db: AsyncClient = Depends(obter_cliente_rls),
 ) -> UsuarioResponse:
     """Retorna os dados e preferências do usuário autenticado."""
     resposta = (
@@ -28,9 +28,7 @@ async def obter_perfil(
         id=dados["id"],
         email=dados["email"],
         telegram_id=dados.get("telegram_id"),
-        whatsapp=dados.get("whatsapp"),
         notif_telegram=dados.get("notif_telegram", False),
-        notif_whatsapp=dados.get("notif_whatsapp", False),
         notif_email=dados.get("notif_email", True),
     )
 
@@ -39,7 +37,7 @@ async def obter_perfil(
 async def atualizar_preferencias(
     payload: PreferenciasUpdate,
     usuario: dict = Depends(obter_usuario_autenticado),
-    db: AsyncClient = Depends(obter_cliente),
+    db: AsyncClient = Depends(obter_cliente_rls),
 ) -> UsuarioResponse:
     """Atualiza as preferências de notificação do usuário."""
     atualizacoes = payload.model_dump(exclude_none=True)
@@ -63,8 +61,6 @@ async def atualizar_preferencias(
         id=dados["id"],
         email=dados["email"],
         telegram_id=dados.get("telegram_id"),
-        whatsapp=dados.get("whatsapp"),
         notif_telegram=dados.get("notif_telegram", False),
-        notif_whatsapp=dados.get("notif_whatsapp", False),
         notif_email=dados.get("notif_email", True),
     )
