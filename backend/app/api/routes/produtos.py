@@ -86,11 +86,15 @@ async def listar_produtos(
     return resultado
 
 
-@router.post("", response_model=ProdutoResponse, status_code=status.HTTP_201_CREATED,
-             dependencies=[Depends(rate_limit(10))])
+_limit_adicionar = rate_limit(10)
+_limit_atualizar = rate_limit(6)
+
+
+@router.post("", response_model=ProdutoResponse, status_code=status.HTTP_201_CREATED)
 async def adicionar_produto(
     payload: ProdutoCreate,
     background_tasks: BackgroundTasks,
+    _rl: None = Depends(_limit_adicionar),
     usuario: dict = Depends(obter_usuario_autenticado),
     db: AsyncClient = Depends(obter_cliente_rls),
 ) -> ProdutoResponse:
@@ -154,10 +158,10 @@ async def adicionar_produto(
     )
 
 
-@router.post("/{produto_id}/atualizar", response_model=ProdutoResponse,
-             dependencies=[Depends(rate_limit(6))])
+@router.post("/{produto_id}/atualizar", response_model=ProdutoResponse)
 async def atualizar_preco_agora(
     produto_id: str,
+    _rl: None = Depends(_limit_atualizar),
     usuario: dict = Depends(obter_usuario_autenticado),
     db: AsyncClient = Depends(obter_cliente_rls),
 ) -> ProdutoResponse:
