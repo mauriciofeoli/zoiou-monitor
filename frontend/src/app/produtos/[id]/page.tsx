@@ -1,4 +1,5 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+"use client";
+
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowLeft,
@@ -11,8 +12,9 @@ import {
   RefreshCw,
   Trash2,
 } from "lucide-react";
-import { useState } from "react";
-import { useEffect } from "react";
+import Link from "next/link";
+import { useParams, useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { Header } from "@/components/Header";
 import { GraficoHistorico } from "@/components/GraficoHistorico";
@@ -22,25 +24,19 @@ import { atualizarAtivo, atualizarAgora, obterHistorico, removerProduto, listarP
 import { formatarBRL, ehPrecoHistoricoLista } from "@/lib/utils";
 import type { Produto } from "@/types";
 
-export const Route = createFileRoute("/produtos/$id")({
-  head: () => ({
-    meta: [{ title: "Produto — Zoiou" }],
-  }),
-  component: ProdutoDetalhe,
-});
-
-function ProdutoDetalhe() {
-  const { id } = Route.useParams();
+export default function ProdutoDetalhe() {
+  const params = useParams();
+  const id = params.id as string;
   const { usuario, carregando: carregandoAuth } = useAuth();
-  const navigate = useNavigate();
+  const router = useRouter();
   const queryClient = useQueryClient();
   const [atualizando, setAtualizando] = useState(false);
 
   useEffect(() => {
     if (!carregandoAuth && !usuario) {
-      navigate({ to: "/login" });
+      router.push("/login");
     }
-  }, [usuario, carregandoAuth, navigate]);
+  }, [usuario, carregandoAuth, router]);
 
   const { data: produtos = [], isLoading: carregandoProdutos } = useQuery({
     queryKey: ["produtos"],
@@ -93,7 +89,7 @@ function ProdutoDetalhe() {
       await removerProduto(id);
       await queryClient.invalidateQueries({ queryKey: ["produtos"] });
       toast.success("Produto removido.");
-      navigate({ to: "/" });
+      router.push("/");
     } catch {
       toast.error("Não foi possível remover o produto.");
     }
@@ -117,7 +113,7 @@ function ProdutoDetalhe() {
         <div className="mx-auto max-w-3xl px-6 py-24 text-center">
           <p className="font-serif text-5xl text-ink">Produto não encontrado.</p>
           <Link
-            to="/"
+            href="/"
             className="mt-6 inline-flex items-center gap-1 text-sm text-success hover:underline"
           >
             <ArrowLeft className="h-4 w-4" /> voltar para a lista
@@ -149,7 +145,7 @@ function ProdutoDetalhe() {
 
       <main className="mx-auto max-w-5xl px-6 py-10">
         <Link
-          to="/"
+          href="/"
           className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-6"
         >
           <ArrowLeft className="h-4 w-4" /> Voltar
@@ -260,7 +256,6 @@ function ProdutoDetalhe() {
           </div>
         </div>
 
-        {/* Estatísticas */}
         <div className="mt-12 grid grid-cols-2 md:grid-cols-4 gap-3">
           {[
             { label: "Mínimo (12m)", valor: minH != null ? formatarBRL(minH) : "—", accent: "text-gold" },
@@ -279,7 +274,6 @@ function ProdutoDetalhe() {
           ))}
         </div>
 
-        {/* Gráfico */}
         <section className="mt-8 rounded-2xl border border-border bg-card p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-serif text-2xl text-ink">Histórico de preços</h2>

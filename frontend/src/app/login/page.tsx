@@ -1,19 +1,14 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+"use client";
+
 import { Eye, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/lib/supabase";
 
-export const Route = createFileRoute("/login")({
-  head: () => ({
-    meta: [{ title: "Entrar — Zoiou" }],
-  }),
-  component: Login,
-});
-
-function Login() {
+export default function Login() {
   const { usuario, carregando } = useAuth();
-  const navigate = useNavigate();
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
   const [modo, setModo] = useState<"entrar" | "cadastrar">("entrar");
@@ -22,9 +17,9 @@ function Login() {
 
   useEffect(() => {
     if (!carregando && usuario) {
-      navigate({ to: "/" });
+      router.push("/");
     }
-  }, [usuario, carregando, navigate]);
+  }, [usuario, carregando, router]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -39,7 +34,7 @@ function Login() {
         const { error } = await supabase.auth.signUp({ email, password: senha });
         if (error) throw error;
       }
-      navigate({ to: "/" });
+      router.push("/");
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Erro ao autenticar.";
       setErro(traduzirErroSupabase(msg));

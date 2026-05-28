@@ -5,26 +5,18 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
-lerna-debug.log*
 
 node_modules
 package-lock.json
-dist
-dist-ssr
-.output
-.vinxi
-.tanstack/**
-.nitro
+
+# Next.js
+.next
+out
+
+# Env files
 *.local
 
-# Wrangler / Cloudflare
-.wrangler/
-.dev.vars
-
-# Vercel
-.vercel
-
-# Editor directories and files
+# Editor
 .vscode/*
 !.vscode/extensions.json
 .idea

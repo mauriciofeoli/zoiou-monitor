@@ -1,4 +1,4 @@
-import { Link } from "@tanstack/react-router";
+import Link from "next/link";
 import { ArrowDownRight, ArrowUpRight, ExternalLink, Minus } from "lucide-react";
 import type { Produto } from "@/types";
 import { formatarBRL } from "@/lib/utils";
@@ -20,8 +20,7 @@ export function CardProduto({ produto, ehHistorico = false }: CardProdutoProps) 
 
   return (
     <Link
-      to="/produtos/$id"
-      params={{ id: produto.id }}
+      href={`/produtos/${produto.id}`}
       className="group relative flex flex-col overflow-hidden rounded-2xl border border-border bg-card transition-all hover:border-foreground/30 hover:shadow-[0_8px_30px_-12px_rgba(0,0,0,0.15)]"
     >
       <div className="relative aspect-[4/3] overflow-hidden bg-muted">

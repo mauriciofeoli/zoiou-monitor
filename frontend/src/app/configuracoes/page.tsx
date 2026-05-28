@@ -1,21 +1,13 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+"use client";
+
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2, Mail, MessageCircle, Send } from "lucide-react";
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Header } from "@/components/Header";
 import { useAuth } from "@/hooks/use-auth";
 import { atualizarPreferencias, obterPerfil } from "@/lib/api";
-
-export const Route = createFileRoute("/configuracoes")({
-  head: () => ({
-    meta: [
-      { title: "Preferências — Zoiou" },
-      { name: "description", content: "Configure como você quer ser avisado sobre mudanças de preço." },
-    ],
-  }),
-  component: Configuracoes,
-});
 
 interface Canal {
   id: "email" | "telegram" | "whatsapp";
@@ -49,17 +41,17 @@ const canais: Canal[] = [
   },
 ];
 
-function Configuracoes() {
+export default function Configuracoes() {
   const { usuario, carregando: carregandoAuth } = useAuth();
-  const navigate = useNavigate();
+  const router = useRouter();
   const queryClient = useQueryClient();
   const [salvando, setSalvando] = useState(false);
 
   useEffect(() => {
     if (!carregandoAuth && !usuario) {
-      navigate({ to: "/login" });
+      router.push("/login");
     }
-  }, [usuario, carregandoAuth, navigate]);
+  }, [usuario, carregandoAuth, router]);
 
   const { data: perfil, isLoading } = useQuery({
     queryKey: ["perfil"],
@@ -78,7 +70,6 @@ function Configuracoes() {
     whatsapp: "",
   });
 
-  // Sincroniza o estado local quando o perfil carrega
   useEffect(() => {
     if (perfil) {
       setAtivos({

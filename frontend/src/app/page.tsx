@@ -1,38 +1,27 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+"use client";
+
 import { useQuery } from "@tanstack/react-query";
 import { Loader2, Plus, Search } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Header } from "@/components/Header";
 import { CardProduto } from "@/components/CardProduto";
 import { AdicionarProdutoModal } from "@/components/AdicionarProdutoModal";
 import { useAuth } from "@/hooks/use-auth";
 import { listarProdutos } from "@/lib/api";
-import { formatarBRL, ehPrecoHistoricoLista } from "@/lib/utils";
+import { formatarBRL } from "@/lib/utils";
 
-export const Route = createFileRoute("/")({
-  head: () => ({
-    meta: [
-      { title: "Zoiou — seu olho nos preços" },
-      {
-        name: "description",
-        content: "Monitore o preço de qualquer produto online. Receba alertas quando o preço cair.",
-      },
-    ],
-  }),
-  component: Dashboard,
-});
-
-function Dashboard() {
+export default function Dashboard() {
   const { usuario, carregando: carregandoAuth } = useAuth();
-  const navigate = useNavigate();
+  const router = useRouter();
   const [busca, setBusca] = useState("");
   const [modalAberto, setModalAberto] = useState(false);
 
   useEffect(() => {
     if (!carregandoAuth && !usuario) {
-      navigate({ to: "/login" });
+      router.push("/login");
     }
-  }, [usuario, carregandoAuth, navigate]);
+  }, [usuario, carregandoAuth, router]);
 
   const { data: produtos = [], isLoading } = useQuery({
     queryKey: ["produtos"],
@@ -55,10 +44,6 @@ function Dashboard() {
 
   const ativos = produtos.filter((p) => p.ativo);
   const lojas = new Set(produtos.map((p) => p.loja).filter(Boolean));
-  const historicos = produtos.filter((p) => {
-    if (p.precoAtual == null) return false;
-    return false; // histórico calculado no servidor; badge vem do CardProduto
-  }).length;
   const economia = produtos.reduce(
     (acc, p) =>
       acc + Math.max(0, (p.precoAnterior ?? p.precoAtual ?? 0) - (p.precoAtual ?? 0)),
@@ -78,7 +63,6 @@ function Dashboard() {
       <Header />
 
       <main className="mx-auto max-w-6xl px-6 py-12">
-        {/* Hero */}
         <section className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between mb-10">
           <div className="max-w-2xl">
             <p className="text-sm uppercase tracking-[0.18em] text-muted-foreground mb-3">
@@ -107,7 +91,6 @@ function Dashboard() {
           </button>
         </section>
 
-        {/* Busca */}
         {produtos.length > 0 && (
           <div className="relative mb-8">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -120,7 +103,6 @@ function Dashboard() {
           </div>
         )}
 
-        {/* Grid */}
         {isLoading ? (
           <div className="flex items-center justify-center py-24">
             <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
