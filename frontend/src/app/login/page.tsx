@@ -56,38 +56,38 @@ export default function Login() {
     <div className="flex min-h-screen flex-col md:flex-row">
 
       {/* Coluna esquerda — Landing */}
-      <div className="flex flex-col border-b border-border md:border-b-0 md:border-r md:w-[55%] px-10 py-10 md:px-16 md:py-16">
-        <div className="flex items-baseline gap-0.5">
-          <ZoiouWordmark size={22} className="text-ink" />
-          <span className="text-success font-bold text-xl leading-none">.</span>
-        </div>
+      <div className="flex items-center justify-center border-b border-border md:border-b-0 md:border-r md:w-[55%] px-10 py-12 md:px-16 md:py-20">
+        <div className="w-full max-w-md">
+          <div className="flex items-baseline gap-0.5 mb-12">
+            <ZoiouWordmark size={22} className="text-ink" />
+            <span className="text-success font-bold text-xl leading-none">.</span>
+          </div>
 
-        <div className="flex flex-col justify-center flex-1 py-8 md:py-0 md:mt-20">
-          <h1 className="font-serif text-4xl md:text-5xl text-ink leading-tight mb-4">
-            Fique de zoio<br />no preço.
+          <h1 className="font-serif text-4xl md:text-5xl text-ink leading-tight mb-5">
+            Preço baixou.<br />Você é o primeiro<br />a saber.
           </h1>
-          <p className="text-muted-foreground text-base md:text-lg mb-10 max-w-sm">
-            Cadastre o produto. A gente monitora.<br className="hidden md:block" />
-            Você compra na hora certa.
+
+          <p className="text-muted-foreground text-base leading-relaxed mb-10 max-w-sm">
+            Sem spam. A gente só avisa quando o preço realmente muda — ou quando algo bate o menor preço dos últimos 12 meses.
           </p>
 
           <ul className="flex flex-col gap-5">
-            <li className="flex items-start gap-3">
-              <Eye className="h-5 w-5 text-muted-foreground mt-0.5 shrink-0" />
+            <li className="flex items-center gap-3">
+              <Eye className="h-4 w-4 text-muted-foreground shrink-0" />
               <span className="text-sm text-foreground">Monitora qualquer loja</span>
             </li>
-            <li className="flex items-start gap-3">
-              <ArrowDownRight className="h-5 w-5 text-success mt-0.5 shrink-0" />
+            <li className="flex items-center gap-3">
+              <ArrowDownRight className="h-4 w-4 text-success shrink-0" />
               <span className="text-sm text-foreground">Avisa quando o preço cai</span>
             </li>
-            <li className="flex items-start gap-3">
-              <Trophy className="h-5 w-5 mt-0.5 shrink-0" style={{ color: "var(--gold)" }} />
+            <li className="flex items-center gap-3">
+              <Trophy className="h-4 w-4 shrink-0" style={{ color: "var(--gold)" }} />
               <span className="text-sm text-foreground">Detecta o menor preço em 12 meses</span>
             </li>
           </ul>
-        </div>
 
-        <p className="text-xs text-muted-foreground pt-8">gratuito · sem anúncios</p>
+          <p className="mt-12 text-xs text-muted-foreground">gratuito · sem anúncios</p>
+        </div>
       </div>
 
       {/* Coluna direita — Login (inalterado) */}
