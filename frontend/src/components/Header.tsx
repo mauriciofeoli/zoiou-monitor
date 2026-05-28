@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Eye, LogOut, Settings } from "lucide-react";
+import { Eye, LogOut, Moon, Settings, Sun } from "lucide-react";
+import { useTheme } from "next-themes";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/use-auth";
 
@@ -10,6 +11,7 @@ export function Header() {
   const { usuario, sair } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
+  const { resolvedTheme, setTheme } = useTheme();
 
   async function handleSair() {
     await sair();
@@ -52,6 +54,15 @@ export function Header() {
           >
             <Settings className="h-4 w-4" /> Preferências
           </Link>
+
+          <button
+            type="button"
+            onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
+            title="Alternar tema"
+            className="p-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+          >
+            {resolvedTheme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+          </button>
 
           {usuario && (
             <div className="ml-2 flex items-center gap-2 pl-2 border-l border-border">
