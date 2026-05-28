@@ -6,7 +6,7 @@ from supabase import AsyncClient
 
 from app.api.deps import obter_cliente_rls, obter_usuario_autenticado
 from app.core.database import obter_cliente as _db_direto
-from app.core.limiter import rate_limit
+from app.core.limiter import RateLimiter
 from app.schemas.produto import ProdutoCreate, ProdutoPatch, ProdutoResponse
 from app.services.historico import buscar_ultimo_preco, buscar_ultimos_precos, registrar_preco
 from app.services.scraper import extrair_metadados_produto, extrair_preco, extrair_produto_completo
@@ -86,8 +86,8 @@ async def listar_produtos(
     return resultado
 
 
-_limit_adicionar = rate_limit(10)
-_limit_atualizar = rate_limit(6)
+_limit_adicionar = RateLimiter(max_requests=10)
+_limit_atualizar = RateLimiter(max_requests=6)
 
 
 @router.post("", response_model=ProdutoResponse, status_code=status.HTTP_201_CREATED)

@@ -3,27 +3,26 @@ from time import monotonic
 
 from fastapi import HTTPException, Request, status
 
-# { ip: [timestamps] } — em memória, reseta ao reiniciar (aceitável para single-instance)
-_contagens: dict[str, list[float]] = defaultdict(list)
 
+class RateLimiter:
+    """Rate limiter por IP em memória. Instâncias são reutilizadas como dependência FastAPI."""
 
-def rate_limit(max_requests: int, janela_segundos: int = 60):
-    """Dependência FastAPI para rate limiting por IP."""
-    async def verificar(request: Request) -> None:
-        ip = (request.client.host if request.client else "unknown")
+    def __init__(self, max_requests: int, janela_segundos: int = 60) -> None:
+        self.max_requests = max_requests
+        self.janela_segundos = janela_segundos
+        self._contagens: dict[str, list[float]] = defaultdict(list)
+
+    async def __call__(self, request: Request) -> None:
+        ip = request.client.host if request.client else "unknown"
         agora = monotonic()
-        corte = agora - janela_segundos
+        corte = agora - self.janela_segundos
 
-        timestamps = _contagens[ip]
-        # Remove registros fora da janela
-        _contagens[ip] = [t for t in timestamps if t > corte]
+        self._contagens[ip] = [t for t in self._contagens[ip] if t > corte]
 
-        if len(_contagens[ip]) >= max_requests:
+        if len(self._contagens[ip]) >= self.max_requests:
             raise HTTPException(
                 status_code=status.HTTP_429_TOO_MANY_REQUESTS,
                 detail="Muitas requisições. Tente novamente em instantes.",
             )
 
-        _contagens[ip].append(agora)
-
-    return verificar
+        self._contagens[ip].append(agora)
