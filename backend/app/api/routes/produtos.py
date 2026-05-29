@@ -56,13 +56,16 @@ async def _capturar_preco_background(produto_id: str, url: str) -> None:
 async def _atualizar_preco_forcado_background(
     produto_id: str, url: str, nome: str, loja: str
 ) -> None:
-    """Captura e salva preço atual; notifica todos os usuários do produto se o preço mudou."""
+    """Captura preço atual; registra e notifica só se o valor mudou mais de R$ 0,01."""
     try:
         db = await _db_direto()
         preco_anterior = await buscar_ultimo_preco(db, produto_id)
         preco = await extrair_preco(url)
         if preco is None:
             logger.warning("BG atualizar-todos: preço não encontrado para %s", url)
+            return
+        if preco_anterior is not None and abs(preco - preco_anterior) <= 0.01:
+            logger.info("BG atualizar-todos: sem variação para %s (R$ %.2f)", url, preco)
             return
         await registrar_preco(db, produto_id, preco)
         logger.info("BG atualizar-todos: R$ %.2f para %s", preco, url)

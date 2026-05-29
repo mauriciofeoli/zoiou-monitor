@@ -23,6 +23,7 @@ export default function Dashboard() {
   const [modalAberto, setModalAberto] = useState(false);
   const [atualizandoTodos, setAtualizandoTodos] = useState(false);
   const [cooldownRestante, setCooldownRestante] = useState(0);
+  const [pollandoAtualizacao, setPollandoAtualizacao] = useState(false);
 
   useEffect(() => {
     const ts = Number(localStorage.getItem(STORAGE_KEY)) || 0;
@@ -38,6 +39,20 @@ export default function Dashboard() {
     return () => clearInterval(id);
   }, [cooldownRestante]);
 
+  // Polling após "Atualizar todos": re-fetcha a cada 10s por até 3 minutos
+  useEffect(() => {
+    if (!pollandoAtualizacao) return;
+    const intervalo = setInterval(
+      () => queryClient.invalidateQueries({ queryKey: ["produtos"] }),
+      10_000,
+    );
+    const parar = setTimeout(() => setPollandoAtualizacao(false), 3 * 60 * 1000);
+    return () => {
+      clearInterval(intervalo);
+      clearTimeout(parar);
+    };
+  }, [pollandoAtualizacao, queryClient]);
+
   async function handleAtualizarTodos() {
     if (atualizandoTodos || cooldownRestante > 0) return;
     setAtualizandoTodos(true);
@@ -45,7 +60,7 @@ export default function Dashboard() {
       await atualizarTodos();
       localStorage.setItem(STORAGE_KEY, String(Date.now()));
       setCooldownRestante(Math.ceil(COOLDOWN_MS / 1000));
-      setTimeout(() => queryClient.invalidateQueries({ queryKey: ["produtos"] }), 4000);
+      setPollandoAtualizacao(true);
     } finally {
       setAtualizandoTodos(false);
     }
