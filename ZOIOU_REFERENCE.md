@@ -29,8 +29,8 @@
 | Playwright | 1.44+ | Scraping fallback (sites com JS) |
 | BeautifulSoup4 | 4.12+ | Extração de HTML |
 | APScheduler | 3.10+ | Agendamento de tarefas |
-| python-telegram-bot | 21+ | Notificações Telegram |
-| Resend | 2+ | Notificações por e-mail |
+| python-telegram-bot | 21+ | Notificações Telegram (ativo) |
+| Resend | 2+ | Notificações por e-mail (não utilizado em produção) |
 | supabase-py | 2+ | Conexão com banco |
 | pydantic | 2+ | Validação de dados |
 | python-dotenv | 1+ | Variáveis de ambiente |
@@ -305,7 +305,7 @@ A API retorna os campos diretos (sem envelope `data/error`) — exceto o handler
 4. **Produto ativo** — scraper só processa produtos com `lista_desejos.ativo = true`.
 5. **Retenção de histórico** — máximo 365 dias; limpeza automática semanal. O histórico pertence ao produto, não ao usuário — dura até o produto ser removido da lista ou completar 365 dias.
 6. **Produto compartilhado** — a tabela `produtos` é compartilhada. Se dois usuários monitoram a mesma URL, o produto existe uma única vez. A `lista_desejos` é a relação por usuário.
-7. **Notificação opcional** — usuário pode desativar Telegram e/ou e-mail e só consultar no dashboard.
+7. **Notificação opcional** — usuário pode desativar Telegram e só consultar no dashboard. WhatsApp está planejado. E-mail existe no código mas não está ativo em produção.
 8. **Links diretos** — nenhum link deve ser substituído por link de afiliado na v1.
 
 ---

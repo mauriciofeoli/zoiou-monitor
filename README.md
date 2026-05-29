@@ -9,7 +9,7 @@ Monitor de preços pessoal. Cole a URL de um produto de qualquer loja online, o 
 ## Funcionalidades
 
 - Monitora qualquer loja brasileira (Kabum, Pichau, Terabyte, Amazon BR, etc.)
-- Notificação por **Telegram** e **e-mail** quando o preço muda
+- Notificação por **Telegram** quando o preço muda (WhatsApp em breve)
 - Badge de **🏆 Preço histórico** quando algo bate o mínimo dos últimos 12 meses
 - Dashboard com histórico de preços em gráfico de área
 - Ativar / pausar monitoramento por produto
@@ -25,7 +25,7 @@ Monitor de preços pessoal. Cole a URL de um produto de qualquer loja online, o 
 | Frontend | Next.js 15 + React 19 + Tailwind v4 |
 | Banco | Supabase (PostgreSQL + Auth + RLS) |
 | Scraping | curl_cffi (primário) + Playwright (fallback) |
-| Notificações | Telegram Bot API + Resend (e-mail) |
+| Notificações | Telegram Bot API · WhatsApp (em breve) |
 | Deploy backend | Railway |
 | Deploy frontend | Vercel |
 

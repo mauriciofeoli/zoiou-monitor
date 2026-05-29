@@ -21,7 +21,7 @@ Leia o ZOIOU_REFERENCE.md antes de qualquer decisão de arquitetura, regra de ne
 | Frontend | Next.js 15 + React 19 + Tailwind v4, em `frontend/` |
 | Banco | Supabase — PostgreSQL + Auth + RLS |
 | Scraping | curl_cffi (path síncrono) → Playwright (fallback, background) |
-| Notificações | Telegram Bot API + Resend (e-mail) |
+| Notificações | Telegram Bot API (ativo) · WhatsApp (em breve) |
 | Deploy | Railway (backend) · Vercel (frontend) |
 | URLs prod | `zoiou-monitor-production.up.railway.app` · `zoiou-monitor-bzpk.vercel.app` |
 
@@ -79,7 +79,8 @@ extrair_preco(url)
       → despachar_notificacoes(db_s, ...)            ← service key
         → busca lista_desejos (todos os usuários)
         → envia Telegram se notif_telegram=True e telegram_id preenchido
-        → envia e-mail se notif_email=True
+        → WhatsApp: planejado, ainda não implementado
+        → E-mail (Resend): código existe mas não está em uso em produção
 ```
 
 Notificação só sai quando `preco_novo is not None` (scraping bem-sucedido) e `abs(preco_novo - preco_anterior) > 0.01`.
