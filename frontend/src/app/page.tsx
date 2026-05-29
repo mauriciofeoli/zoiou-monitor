@@ -25,7 +25,7 @@ export default function Dashboard() {
   const [cooldownRestante, setCooldownRestante] = useState(0);
 
   useEffect(() => {
-    const ts = Number(localStorage.getItem(STORAGE_KEY) ?? 0);
+    const ts = Number(localStorage.getItem(STORAGE_KEY)) || 0;
     const restante = Math.max(0, COOLDOWN_MS - (Date.now() - ts));
     if (restante > 0) setCooldownRestante(Math.ceil(restante / 1000));
   }, []);

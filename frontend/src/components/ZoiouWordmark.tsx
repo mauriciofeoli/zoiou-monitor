@@ -1,18 +1,17 @@
-interface Props {
+interface WordmarkProps {
   size?: number;
   className?: string;
 }
 
 function ZEye({ size }: { size: number }) {
-  const s = size * 0.62;
   return (
     <svg
-      width={s}
-      height={s}
+      width={size}
+      height={size}
       viewBox="0 0 100 100"
       fill="none"
       aria-hidden="true"
-      style={{ display: "block", transform: "translateY(0.015em)", flexShrink: 0 }}
+      style={{ display: "block", flexShrink: 0 }}
     >
       <circle cx="50" cy="50" r="38" stroke="currentColor" strokeWidth="15" />
       <circle cx="50" cy="54" r="16" fill="currentColor" />
@@ -20,7 +19,11 @@ function ZEye({ size }: { size: number }) {
   );
 }
 
-export function ZoiouWordmark({ size = 24, className }: Props) {
+export function ZoiouWordmark({ size = 24, className }: WordmarkProps) {
+  const eyeSize = size * 0.62;
+  const noseW = size * 0.115;
+  const noseH = size * 0.46;
+
   return (
     <span
       className={className}
@@ -34,11 +37,11 @@ export function ZoiouWordmark({ size = 24, className }: Props) {
       }}
     >
       <span style={{ lineHeight: 0.7 }}>z</span>
-      <ZEye size={size} />
+      <ZEye size={eyeSize} />
       <span
         style={{
-          width: size * 0.115,
-          height: size * 0.46,
+          width: noseW,
+          height: noseH,
           borderRadius: 9999,
           background: "currentColor",
           display: "inline-block",
@@ -47,7 +50,7 @@ export function ZoiouWordmark({ size = 24, className }: Props) {
           transform: "translateY(0.05em)",
         }}
       />
-      <ZEye size={size} />
+      <ZEye size={eyeSize} />
       <span style={{ lineHeight: 0.7, marginLeft: `-${size * 0.005}px` }}>u</span>
     </span>
   );
@@ -58,6 +61,7 @@ export function ZoiouEyeMark({ size = 40 }: { size?: number }) {
   const eyeSize = size * 0.42;
   const noseW = size * 0.13;
   const noseH = size * 0.38;
+
   return (
     <span
       aria-hidden="true"
@@ -74,10 +78,7 @@ export function ZoiouEyeMark({ size = 40 }: { size?: number }) {
       }}
     >
       <span style={{ display: "inline-flex", alignItems: "center", gap: size * 0.09 }}>
-        <svg width={eyeSize} height={eyeSize} viewBox="0 0 100 100" fill="none">
-          <circle cx="50" cy="50" r="38" stroke="currentColor" strokeWidth="15" />
-          <circle cx="50" cy="54" r="16" fill="currentColor" />
-        </svg>
+        <ZEye size={eyeSize} />
         <span
           style={{
             width: noseW,
@@ -88,10 +89,7 @@ export function ZoiouEyeMark({ size = 40 }: { size?: number }) {
             transform: "translateY(1px)",
           }}
         />
-        <svg width={eyeSize} height={eyeSize} viewBox="0 0 100 100" fill="none">
-          <circle cx="50" cy="50" r="38" stroke="currentColor" strokeWidth="15" />
-          <circle cx="50" cy="54" r="16" fill="currentColor" />
-        </svg>
+        <ZEye size={eyeSize} />
       </span>
     </span>
   );

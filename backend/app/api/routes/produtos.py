@@ -15,6 +15,28 @@ router = APIRouter(prefix="/produtos", tags=["produtos"])
 logger = logging.getLogger(__name__)
 
 
+async def _notificar_variacao(
+    db: AsyncClient,
+    produto_id: str,
+    nome: str,
+    loja: str,
+    url: str,
+    preco_anterior: float | None,
+    preco_novo: float,
+) -> None:
+    """Despacha notificações se a variação de preço for significativa (> R$ 0,01)."""
+    if preco_anterior is not None and abs(preco_novo - preco_anterior) > 0.01:
+        await despachar_notificacoes(
+            db=db,
+            produto_id=produto_id,
+            nome=nome,
+            loja=loja,
+            url=url,
+            preco_anterior=preco_anterior,
+            preco_atual=preco_novo,
+        )
+
+
 async def _capturar_preco_background(produto_id: str, url: str) -> None:
     """Tenta capturar preço via Playwright após a resposta já ter sido enviada."""
     try:
@@ -31,8 +53,10 @@ async def _capturar_preco_background(produto_id: str, url: str) -> None:
         logger.error("Background preço %s: %s", url, exc)
 
 
-async def _atualizar_preco_forcado_background(produto_id: str, url: str) -> None:
-    """Captura e salva preço atual; notifica usuários se o preço mudou."""
+async def _atualizar_preco_forcado_background(
+    produto_id: str, url: str, nome: str, loja: str
+) -> None:
+    """Captura e salva preço atual; notifica todos os usuários do produto se o preço mudou."""
     try:
         db = await _db_direto()
         preco_anterior = await buscar_ultimo_preco(db, produto_id)
@@ -42,18 +66,7 @@ async def _atualizar_preco_forcado_background(produto_id: str, url: str) -> None
             return
         await registrar_preco(db, produto_id, preco)
         logger.info("BG atualizar-todos: R$ %.2f para %s", preco, url)
-        if preco_anterior is not None and abs(preco - preco_anterior) > 0.01:
-            produto = await db.table("produtos").select("nome, loja").eq("id", produto_id).single().execute()
-            if produto.data:
-                await despachar_notificacoes(
-                    db=db,
-                    produto_id=produto_id,
-                    nome=produto.data["nome"],
-                    loja=produto.data.get("loja") or "",
-                    url=url,
-                    preco_anterior=preco_anterior,
-                    preco_atual=preco,
-                )
+        await _notificar_variacao(db, produto_id, nome, loja, url, preco_anterior, preco)
     except Exception as exc:
         logger.error("BG atualizar-todos %s: %s", url, exc)
 
@@ -123,7 +136,6 @@ async def adicionar_produto(
     """Adiciona um produto à lista de desejos. Responde rápido; preço/metadados
     são completados em background se curl_cffi não conseguir imediatamente."""
     url = str(payload.url)
-    # db_s: service key para escritas em produtos e historico_precos (sem policy de INSERT para anon)
     db_s = await _db_direto()
 
     existente = await db_s.table("produtos").select("id, nome, url, loja, imagem").eq("url", url).limit(1).execute()
@@ -132,7 +144,6 @@ async def adicionar_produto(
         produto_id = existente.data[0]["id"]
         p = existente.data[0]
     else:
-        # Somente curl_cffi no path síncrono — rápido, sem Playwright
         dados = await extrair_produto_completo(url, usar_playwright=False)
         novo = (
             await db_s.table("produtos")
@@ -151,7 +162,6 @@ async def adicionar_produto(
         if dados.get("preco") is not None:
             await registrar_preco(db_s, produto_id, dados["preco"])
 
-    # lista_desejos: RLS client — banco valida que usuario_id = auth.uid()
     await db.table("lista_desejos").upsert(
         {"usuario_id": usuario["id"], "produto_id": produto_id, "ativo": True},
         on_conflict="usuario_id,produto_id",
@@ -159,11 +169,9 @@ async def adicionar_produto(
 
     preco_atual = await buscar_ultimo_preco(db, produto_id)
 
-    # Preço ainda falta → captura com Playwright em background
     if preco_atual is None:
         background_tasks.add_task(_capturar_preco_background, produto_id, url)
 
-    # Nome ainda é a URL → atualiza metadados via Playwright em background
     if not p.get("nome") or p["nome"] == url:
         background_tasks.add_task(_atualizar_metadados_background, produto_id, url, p.get("imagem"))
 
@@ -199,7 +207,7 @@ async def atualizar_todos_agora(
     for item in lista.data or []:
         produto = (
             await db_s.table("produtos")
-            .select("url")
+            .select("url, nome, loja")
             .eq("id", item["produto_id"])
             .single()
             .execute()
@@ -209,6 +217,8 @@ async def atualizar_todos_agora(
                 _atualizar_preco_forcado_background,
                 item["produto_id"],
                 produto.data["url"],
+                produto.data.get("nome") or "",
+                produto.data.get("loja") or "",
             )
             total += 1
     return {"iniciado": True, "total": total}
@@ -223,7 +233,6 @@ async def atualizar_preco_agora(
     """Dispara o scraping imediato de um produto e atualiza nome/imagem se ainda não tiver."""
     db_s = await _db_direto()
 
-    # lista_desejos: RLS client — banco rejeita se não for do usuário
     lista = (
         await db.table("lista_desejos")
         .select("ativo")
@@ -245,7 +254,6 @@ async def atualizar_preco_agora(
     p = produto_db.data
     url = p["url"]
 
-    # Atualiza metadados se o nome ainda é a URL (escrita em produtos → service key)
     if not p["nome"] or p["nome"] == url:
         metadados = await extrair_metadados_produto(url)
         if metadados.get("nome"):
@@ -256,22 +264,17 @@ async def atualizar_preco_agora(
             p["nome"] = metadados["nome"]
             p["imagem"] = metadados.get("imagem") or p.get("imagem")
 
-    preco_anterior_valor = await buscar_ultimo_preco(db_s, produto_id)
     preco_novo = await extrair_preco(url)
     if preco_novo is not None:
         await registrar_preco(db_s, produto_id, preco_novo)
-        if preco_anterior_valor is not None and abs(preco_novo - preco_anterior_valor) > 0.01:
-            await despachar_notificacoes(
-                db=db,
-                produto_id=produto_id,
-                nome=p["nome"],
-                loja=p.get("loja") or "",
-                url=url,
-                preco_anterior=preco_anterior_valor,
-                preco_atual=preco_novo,
-            )
 
-    preco_atual, preco_anterior = await buscar_ultimos_precos(db, produto_id)
+    # buscar_ultimos_precos já retorna (atual, anterior) após o registro — sem roundtrip extra
+    preco_atual, preco_anterior = await buscar_ultimos_precos(db_s, produto_id)
+
+    await _notificar_variacao(
+        db_s, produto_id, p["nome"], p.get("loja") or "", url, preco_anterior, preco_atual or 0.0
+    )
+
     ativo = lista.data[0]["ativo"]
 
     return ProdutoResponse(
