@@ -85,7 +85,7 @@ zoiou/
 │   │   ├── api/routes/     # produtos, historico, usuarios
 │   │   ├── core/           # config, database, limiter, security
 │   │   ├── schemas/        # pydantic models
-│   │   ├── services/       # scraper, historico, notificacao, telegram, email
+│   │   ├── services/       # scraper, historico, notificacao, telegram
 │   │   └── scheduler/      # jobs.py — cron 03:00 BRT
 │   └── tests/
 ├── frontend/
@@ -95,12 +95,12 @@ zoiou/
 │       ├── hooks/          # use-auth.tsx
 │       ├── lib/            # api/index.ts, supabase.ts, utils.ts
 │       └── types/          # index.ts
-└── ZOIOU_REFERENCE.md      # fonte única de verdade do produto
+├── README.md               # este arquivo
+└── CLAUDE.md               # contexto e instruções para agentes de IA
 ```
 
 ---
 
 ## Documentação
 
-- **`ZOIOU_REFERENCE.md`** — especificação completa: regras de negócio, stack, banco, API, segurança, clean code
-- **`CLAUDE.md`** — instruções para agentes de IA que trabalham neste repositório
+- **`CLAUDE.md`** — mapa completo do repositório: stack, arquivos-chave, padrões de código, fluxo de notificação, endpoints e design system
