@@ -7,10 +7,9 @@
 
 ## O que é o Zoiou
 
-Monitor de preços pessoal (SaaS gratuito v1). O usuário cola a URL de um produto, o sistema raspa o preço diariamente e notifica via Telegram e e-mail quando muda. Badge especial quando o preço bate o mínimo histórico dos últimos 12 meses.
+Monitor de preços pessoal (SaaS gratuito v1). O usuário cola a URL de um produto, o sistema raspa o preço diariamente e notifica via Telegram quando muda. Badge especial quando o preço bate o mínimo histórico dos últimos 12 meses.
 
-**Fonte única de verdade do produto:** `ZOIOU_REFERENCE.md` na raiz.  
-Leia o ZOIOU_REFERENCE.md antes de qualquer decisão de arquitetura, regra de negócio ou banco.
+Para regras de negócio completas leia **`BUSINESS_RULES.md`**.
 
 ---
 
@@ -40,7 +39,7 @@ Leia o ZOIOU_REFERENCE.md antes de qualquer decisão de arquitetura, regra de ne
 | `backend/app/core/database.py` | `obter_cliente()` → service key (bypassa RLS) |
 | `backend/app/core/limiter.py` | Rate limiting por IP (middleware Starlette) |
 | `backend/app/services/scraper.py` | `extrair_preco`, `extrair_produto_completo`, `extrair_metadados_produto` |
-| `backend/app/services/notificacao.py` | `despachar_notificacoes` — envia Telegram + e-mail para todos os usuários do produto |
+| `backend/app/services/notificacao.py` | `despachar_notificacoes` — envia Telegram para todos os usuários do produto |
 | `backend/app/services/historico.py` | `registrar_preco`, `buscar_ultimo_preco`, `buscar_ultimos_precos` |
 | `backend/app/scheduler/jobs.py` | Cron 03:00 BRT — monitora todos os produtos ativos |
 
@@ -81,7 +80,6 @@ extrair_preco(url)
         → busca lista_desejos (todos os usuários)
         → envia Telegram se notif_telegram=True e telegram_id preenchido
         → WhatsApp: planejado, ainda não implementado
-        → E-mail (Resend): código existe mas não está em uso em produção
 ```
 
 Notificação só sai quando `preco_novo is not None` (scraping bem-sucedido) e `abs(preco_novo - preco_anterior) > 0.01`.
@@ -157,9 +155,6 @@ cd frontend && bun run dev                    # porta 3000
 ---
 
 ## Design system
-
-Para trabalhar em UI, interfaces ou assets visuais, use o design system em:
-`Zoiou Design System.zip` (raiz do repo) — contém tokens de cor, tipografia, componentes e UI kit.
 
 Princípios visuais resumidos:
 - **Cor:** oklch, neutros quentes. Verde = queda de preço. Vermelho = alta. Dourado = preço histórico.
