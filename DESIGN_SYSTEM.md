@@ -30,19 +30,22 @@ Definidos em `frontend/src/app/globals.css` usando **oklch**. Nunca usar hex ou 
 
 ### Dark mode (classe `.dark` no html)
 ```css
---background:  oklch(0.14 0 0)
+--background:  oklch(0.18 0 0)   /* ≈ #121212 — fundo base */
 --foreground:  oklch(0.83 0 0)
 --ink:         oklch(0.93 0 0)
---card:        oklch(0.18 0 0)
+--card:        oklch(0.22 0 0)   /* ≈ #1a1a1a — superfícies elevadas (inputs, cards) */
 --border:      oklch(1 0 0 / 10%)
 --success:     oklch(0.7 0.16 150)
 --destructive: oklch(0.68 0.2 28)
 --gold:        oklch(0.78 0.14 75)
+--brand:       oklch(0.68 0.2 250)  /* azul — cor primária de destaque */
+--brand-foreground: oklch(1 0 0)
 ```
 
 ### Uso semântico das cores
 | Cor | Classe Tailwind | Quando usar |
 |-----|----------------|-------------|
+| Azul (brand) | `text-brand`, `bg-brand`, `ring-brand/40` | CTAs principais (botão Entrar), destaques de headline |
 | Verde | `text-success`, `bg-success/15`, `ring-success/30` | Preço caiu, economia, notificação positiva |
 | Vermelho | `text-destructive`, `bg-destructive/15`, `ring-destructive/30` | Preço subiu, erro, ação destrutiva |
 | Dourado | `text-gold`, `bg-gold/15`, `ring-gold/40` | Preço histórico (mínimo 12 meses) exclusivamente |
@@ -87,9 +90,9 @@ Bordas sempre `border border-border` (1px, token `--border`). Dashed só em esta
 
 ### Botão primário
 ```tsx
-className="inline-flex items-center gap-2 rounded-full bg-foreground px-5 py-3 text-sm font-medium text-background hover:bg-foreground/90 transition-colors"
+className="inline-flex items-center gap-2 rounded-full bg-brand px-5 py-3 text-sm font-medium text-brand-foreground hover:bg-brand/90 transition-colors"
 ```
-Uso: ação principal da tela (Adicionar produto, Entrar, Ver na loja).
+Uso: ação principal da tela (Entrar, Criar conta). Cor: azul brand com texto branco.
 
 ### Botão secundário
 ```tsx
@@ -146,7 +149,7 @@ className="absolute top-3 right-3 rounded-full bg-background/90 px-2.5 py-1 text
 
 ### Input de formulário
 ```tsx
-className="w-full rounded-xl border border-border bg-card px-4 py-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+className="w-full rounded-xl border border-border bg-card px-4 py-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-brand/40"
 ```
 
 ### Input de busca (pill)

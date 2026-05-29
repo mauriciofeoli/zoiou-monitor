@@ -64,11 +64,11 @@ export default function Login() {
           </div>
 
           <h1 className="font-serif text-4xl md:text-5xl text-ink leading-tight mb-5">
-            Preço baixou.<br />Você é o primeiro<br />a saber.
+            <span className="text-brand">Preço baixou.</span><br />Você será o primeiro<br />a saber.
           </h1>
 
           <p className="text-muted-foreground text-base leading-relaxed mb-10 max-w-sm">
-            Sem spam. A gente só avisa quando o preço realmente muda — ou quando algo bate o menor preço dos últimos 12 meses.
+            Sem spam. A gente só avisa quando o preço realmente muda, ou quando algo bate o menor preço dos últimos 12 meses.
           </p>
 
           <ul className="flex flex-col gap-5">
@@ -90,17 +90,9 @@ export default function Login() {
         </div>
       </div>
 
-      {/* Coluna direita — Login (inalterado) */}
+      {/* Coluna direita — Login */}
       <div className="flex items-center justify-center md:w-1/2 px-6 py-12">
         <div className="w-full max-w-sm">
-          <div className="mb-8 flex flex-col items-center gap-2">
-            <span className="flex items-baseline gap-0.5">
-              <ZoiouWordmark size={32} className="text-ink" />
-              <span className="text-success font-bold text-3xl leading-none">.</span>
-            </span>
-            <p className="text-sm text-muted-foreground">seu olho nos preços</p>
-          </div>
-
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-foreground mb-1.5">
@@ -113,7 +105,7 @@ export default function Login() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="voce@exemplo.com"
-                className="w-full rounded-xl border border-border bg-card px-4 py-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                className="w-full rounded-xl border border-border bg-card px-4 py-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-brand/40"
               />
             </div>
 
@@ -129,7 +121,7 @@ export default function Login() {
                 onChange={(e) => setSenha(e.target.value)}
                 placeholder="••••••••"
                 minLength={6}
-                className="w-full rounded-xl border border-border bg-card px-4 py-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                className="w-full rounded-xl border border-border bg-card px-4 py-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-brand/40"
               />
             </div>
 
@@ -142,7 +134,7 @@ export default function Login() {
             <button
               type="submit"
               disabled={enviando}
-              className="w-full rounded-full bg-foreground px-5 py-3 text-sm font-medium text-background hover:bg-foreground/90 disabled:opacity-60 transition-colors flex items-center justify-center gap-2"
+              className="w-full rounded-full bg-brand px-5 py-3 text-sm font-medium text-brand-foreground hover:bg-brand/90 disabled:opacity-60 transition-colors flex items-center justify-center gap-2"
             >
               {enviando && <Loader2 className="h-4 w-4 animate-spin" />}
               {modo === "entrar" ? "Entrar" : "Criar conta"}
@@ -157,11 +149,19 @@ export default function Login() {
                 setModo(modo === "entrar" ? "cadastrar" : "entrar");
                 setErro("");
               }}
-              className="text-foreground underline underline-offset-2 hover:text-success transition-colors"
+              className="text-foreground underline underline-offset-2 hover:text-brand transition-colors"
             >
               {modo === "entrar" ? "Criar conta" : "Entrar"}
             </button>
           </p>
+
+          <div className="mt-12 flex flex-col items-center gap-1.5">
+            <span className="flex items-baseline gap-0.5">
+              <ZoiouWordmark size={24} className="text-ink" />
+              <span className="text-success font-bold text-2xl leading-none">.</span>
+            </span>
+            <p className="text-xs text-muted-foreground">seu olho nos preços</p>
+          </div>
         </div>
       </div>
 
