@@ -71,14 +71,17 @@ async def _atualizar_preco_forcado_background(
         logger.error("BG atualizar-todos %s: %s", url, exc)
 
 
-async def _atualizar_metadados_background(produto_id: str, url: str, imagem_atual: str | None) -> None:
-    """Atualiza nome e imagem via Playwright quando curl_cffi não conseguiu."""
+async def _atualizar_metadados_background(
+    produto_id: str, url: str, imagem_atual: str | None, loja: str = ""
+) -> None:
+    """Atualiza nome e imagem quando curl_cffi retornou metadados genéricos."""
     try:
         db = await _db_direto()
         meta = await extrair_metadados_produto(url)
-        if meta.get("nome") and meta["nome"] != url:
+        nome = meta.get("nome", "")
+        if nome and nome != url and nome != loja:
             await db.table("produtos").update({
-                "nome": meta["nome"],
+                "nome": nome,
                 "imagem": meta.get("imagem") or imagem_atual,
             }).eq("id", produto_id).execute()
             logger.info("Background: metadados atualizados para %s", url)
@@ -172,8 +175,10 @@ async def adicionar_produto(
     if preco_atual is None:
         background_tasks.add_task(_capturar_preco_background, produto_id, url)
 
-    if not p.get("nome") or p["nome"] == url:
-        background_tasks.add_task(_atualizar_metadados_background, produto_id, url, p.get("imagem"))
+    loja_p = p.get("loja", "")
+    nome_invalido = not p.get("nome") or p["nome"] == url or p["nome"] == loja_p
+    if nome_invalido:
+        background_tasks.add_task(_atualizar_metadados_background, produto_id, url, p.get("imagem"), loja_p)
 
     return ProdutoResponse(
         id=p["id"],
@@ -254,14 +259,16 @@ async def atualizar_preco_agora(
     p = produto_db.data
     url = p["url"]
 
-    if not p["nome"] or p["nome"] == url:
+    loja_p = p.get("loja", "")
+    if not p["nome"] or p["nome"] == url or p["nome"] == loja_p:
         metadados = await extrair_metadados_produto(url)
-        if metadados.get("nome"):
+        novo_nome = metadados.get("nome", "")
+        if novo_nome and novo_nome != loja_p:
             await db_s.table("produtos").update({
-                "nome": metadados["nome"],
+                "nome": novo_nome,
                 "imagem": metadados.get("imagem") or p.get("imagem"),
             }).eq("id", produto_id).execute()
-            p["nome"] = metadados["nome"]
+            p["nome"] = novo_nome
             p["imagem"] = metadados.get("imagem") or p.get("imagem")
 
     preco_novo = await extrair_preco(url)

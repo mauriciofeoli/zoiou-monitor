@@ -177,33 +177,63 @@ def _extrair_preco_de_sopa(sopa: BeautifulSoup) -> float | None:
     return None
 
 
+def _nome_parece_dominio(nome: str) -> bool:
+    """True quando o nome extraído parece ser o domínio da loja, não o produto."""
+    return bool(re.match(r"^[\w.-]+\.(com\.br|com|br|net|org|io)$", nome.lower().strip()))
+
+
 def _extrair_metadados_de_sopa(sopa: BeautifulSoup, url: str) -> dict:
     """Extrai nome, loja e imagem de um HTML parseado."""
     loja = urlparse(url).netloc.replace("www.", "")
     nome = ""
     imagem = ""
 
-    # Nome: og:title > itemprop=name > h1
-    for tentativa in [
-        lambda: sopa.find("meta", property="og:title"),
-        lambda: sopa.find(attrs={"itemprop": "name"}),
-        lambda: sopa.find("h1"),
-    ]:
-        el = tentativa()
-        if el:
-            val = (el.get("content") or el.get_text(strip=True)).strip()
-            if val:
-                nome = val
-                break
+    # 0. JSON-LD Product schema — mais confiável que og:title (contém o nome real do produto)
+    for tag in sopa.find_all("script", type="application/ld+json"):
+        try:
+            dados_ld = json.loads(tag.string or "")
+            itens = dados_ld if isinstance(dados_ld, list) else [dados_ld]
+            for item in itens:
+                if "@graph" in item:
+                    itens.extend(item["@graph"])
+                if item.get("@type") in ("Product", "IndividualProduct"):
+                    if not nome and item.get("name"):
+                        nome = str(item["name"]).strip()
+                    if not imagem and item.get("image"):
+                        img = item["image"]
+                        if isinstance(img, list):
+                            img = img[0]
+                        if isinstance(img, dict):
+                            img = img.get("url") or img.get("contentUrl") or ""
+                        imagem = str(img).strip()
+                    if nome and imagem:
+                        break
+        except Exception:
+            continue
 
-    # Imagem: og:image > itemprop=image > primeira img do produto
-    meta_img = sopa.find("meta", property="og:image")
-    if meta_img and meta_img.get("content"):
-        imagem = str(meta_img["content"])
-    else:
-        el_img = sopa.find(attrs={"itemprop": "image"})
-        if el_img:
-            imagem = str(el_img.get("src") or el_img.get("content") or "")
+    # 1. Nome: og:title > itemprop=name > h1 (se JSON-LD não encontrou)
+    if not nome:
+        for tentativa in [
+            lambda: sopa.find("meta", property="og:title"),
+            lambda: sopa.find(attrs={"itemprop": "name"}),
+            lambda: sopa.find("h1"),
+        ]:
+            el = tentativa()
+            if el:
+                val = (el.get("content") or el.get_text(strip=True)).strip()
+                if val:
+                    nome = val
+                    break
+
+    # 2. Imagem: og:image > itemprop=image (se JSON-LD não encontrou)
+    if not imagem:
+        meta_img = sopa.find("meta", property="og:image")
+        if meta_img and meta_img.get("content"):
+            imagem = str(meta_img["content"])
+        else:
+            el_img = sopa.find(attrs={"itemprop": "image"})
+            if el_img:
+                imagem = str(el_img.get("src") or el_img.get("content") or "")
 
     return {"nome": nome, "loja": loja, "imagem": imagem}
 
@@ -318,14 +348,15 @@ async def extrair_preco(url: str) -> float | None:
 
 
 async def extrair_metadados_produto(url: str) -> dict:
-    """Extrai nome, loja e imagem do produto."""
+    """Extrai nome, loja e imagem do produto. Rejeita nomes que parecem domínios."""
+    loja = urlparse(url).netloc.replace("www.", "")
     for buscar in [_buscar_html_worker, _buscar_html_scraper_api, _buscar_html_cffi, _buscar_html_playwright]:
         html = await buscar(url)
         if html:
             meta = _extrair_metadados_de_sopa(BeautifulSoup(html, "html.parser"), url)
-            if meta["nome"]:
+            nome = meta["nome"]
+            if nome and nome != loja and not _nome_parece_dominio(nome):
                 return meta
-    loja = urlparse(url).netloc.replace("www.", "")
     return {"nome": "", "loja": loja, "imagem": ""}
 
 
