@@ -13,9 +13,11 @@ build/
 # Node
 node_modules/
 .next/
+.output/
 .env.local
 .env.production
 frontend-preview/
+*.tsbuildinfo
 
 # Sistema
 .DS_Store
