@@ -156,6 +156,8 @@ cd frontend && bun run dev                    # porta 3000
 
 ## Design system
 
+Para qualquer mudança visual leia **`DESIGN_SYSTEM.md`** — tokens, componentes, tipografia, ícones e regras de voz derivados do código real.
+
 Princípios visuais resumidos:
 - **Cor:** oklch, neutros quentes. Verde = queda de preço. Vermelho = alta. Dourado = preço histórico.
 - **Tipo:** Inter em todo lugar. `font-serif` no código = Inter 700 com tracking −0.025em (alias histórico).
