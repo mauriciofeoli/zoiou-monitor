@@ -268,12 +268,13 @@ async def atualizar_preco_agora(
     if preco_novo is not None:
         await registrar_preco(db_s, produto_id, preco_novo)
 
-    # buscar_ultimos_precos já retorna (atual, anterior) após o registro — sem roundtrip extra
+    # buscar_ultimos_precos retorna (atual, anterior) após o registro
     preco_atual, preco_anterior = await buscar_ultimos_precos(db_s, produto_id)
 
-    await _notificar_variacao(
-        db_s, produto_id, p["nome"], p.get("loja") or "", url, preco_anterior, preco_atual or 0.0
-    )
+    if preco_novo is not None:
+        await _notificar_variacao(
+            db_s, produto_id, p["nome"], p.get("loja") or "", url, preco_anterior, preco_novo
+        )
 
     ativo = lista.data[0]["ativo"]
 
