@@ -28,7 +28,6 @@ export function Header() {
       <div className="mx-auto max-w-6xl px-6 h-16 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-1 group">
           <ZoiouWordmark size={26} className="text-ink" />
-          <span className="text-success font-bold text-2xl leading-none" style={{ marginLeft: 1 }}>.</span>
         </Link>
 
         <nav className="flex items-center gap-1 text-sm">

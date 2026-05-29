@@ -228,15 +228,14 @@ Biblioteca: **Lucide React** (`lucide-react`). Tamanho padrão `h-4 w-4` ou `h-5
 Componente: `frontend/src/components/ZoiouWordmark.tsx`
 
 ```tsx
-// Wordmark completo (header, footer, login)
+// Wordmark completo (header, footer, login) — sem ponto, clean
 <ZoiouWordmark size={26} className="text-ink" />
-<span className="text-success font-bold text-2xl leading-none">.</span>
 
 // EyeMark — tile com a face (não usado atualmente na UI, reservado para favicon/app icon)
 <ZoiouEyeMark size={52} />
 ```
 
-O wordmark é `z · 👁 · | · 👁 · u` — os dois "o" do nome viram olhos SVG e o "i" vira nariz. O ponto final é sempre verde (`text-success`).
+O wordmark é `z · 👁 · | · 👁 · u` — os dois "o" do nome viram olhos SVG e o "i" vira nariz. Sem ponto final.
 
 **Favicon:** `frontend/src/app/icon.svg` — face (olhos + nariz) em tile preto, gerado automaticamente pelo Next.js App Router.
 

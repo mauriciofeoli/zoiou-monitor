@@ -86,7 +86,7 @@ export function AdicionarProdutoModal({ aberto, fechar }: AdicionarProdutoModalP
             <button
               type="submit"
               disabled={adicionando || !url.trim()}
-              className="flex-1 rounded-full bg-foreground px-4 py-2.5 text-sm font-medium text-background hover:bg-foreground/90 disabled:opacity-60 transition-colors flex items-center justify-center gap-2"
+              className="flex-1 rounded-full bg-brand px-4 py-2.5 text-sm font-medium text-brand-foreground hover:bg-brand/90 disabled:opacity-60 transition-colors flex items-center justify-center gap-2"
             >
               {adicionando ? (
                 <Loader2 className="h-4 w-4 animate-spin" />

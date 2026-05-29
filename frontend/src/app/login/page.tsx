@@ -60,7 +60,6 @@ export default function Login() {
         <div className="w-full max-w-md">
           <div className="flex items-baseline gap-0.5 mb-12">
             <ZoiouWordmark size={22} className="text-ink" />
-            <span className="text-success font-bold text-xl leading-none">.</span>
           </div>
 
           <h1 className="font-serif text-4xl md:text-5xl text-ink leading-tight mb-5">
@@ -158,7 +157,6 @@ export default function Login() {
           <div className="mt-12 flex flex-col items-center gap-1.5">
             <span className="flex items-baseline gap-0.5">
               <ZoiouWordmark size={24} className="text-ink" />
-              <span className="text-success font-bold text-2xl leading-none">.</span>
             </span>
             <p className="text-xs text-muted-foreground">seu olho nos preços</p>
           </div>

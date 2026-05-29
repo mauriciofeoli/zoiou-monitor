@@ -130,7 +130,7 @@ export default function Dashboard() {
             </p>
             <h1 className="font-serif text-xl md:text-2xl text-ink leading-snug">
               De olho em{" "}
-              <span className="text-success">{ativos.length}</span>{" "}
+              <span className="text-brand">{ativos.length}</span>{" "}
               produto{ativos.length !== 1 ? "s" : ""} de{" "}
               <span>{lojas.size}</span>{" "}
               loja{lojas.size !== 1 ? "s" : ""}.
@@ -163,7 +163,7 @@ export default function Dashboard() {
             <button
               type="button"
               onClick={() => setModalAberto(true)}
-              className="inline-flex items-center gap-2 rounded-full bg-foreground px-5 py-3 text-sm font-medium text-background hover:bg-foreground/90 transition-colors shadow-sm"
+              className="inline-flex items-center gap-2 rounded-full bg-brand px-5 py-3 text-sm font-medium text-brand-foreground hover:bg-brand/90 transition-colors shadow-sm"
             >
               <Plus className="h-4 w-4" /> Adicionar produto
             </button>
@@ -195,7 +195,7 @@ export default function Dashboard() {
             <button
               type="button"
               onClick={() => setModalAberto(true)}
-              className="inline-flex items-center gap-2 rounded-full bg-foreground px-5 py-3 text-sm font-medium text-background hover:bg-foreground/90"
+              className="inline-flex items-center gap-2 rounded-full bg-brand px-5 py-3 text-sm font-medium text-brand-foreground hover:bg-brand/90"
             >
               <Plus className="h-4 w-4" /> Adicionar produto
             </button>
@@ -220,7 +220,6 @@ export default function Dashboard() {
         <div className="mx-auto max-w-6xl px-6 py-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-muted-foreground">
           <p className="flex items-center gap-1">
             <ZoiouWordmark size={16} className="text-foreground" />
-            <span className="text-success font-bold">.</span>
             <span>· seu olho nos preços</span>
           </p>
           <div className="flex items-center gap-4">
