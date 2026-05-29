@@ -69,11 +69,37 @@ export default function Dashboard() {
 
   const filtrados = useMemo(() => {
     const q = busca.trim().toLowerCase();
-    if (!q) return produtos;
-    return produtos.filter(
-      (p) =>
-        p.nome.toLowerCase().includes(q) || (p.loja ?? "").toLowerCase().includes(q),
-    );
+    const lista = q
+      ? produtos.filter(
+          (p) => p.nome.toLowerCase().includes(q) || (p.loja ?? "").toLowerCase().includes(q),
+        )
+      : [...produtos];
+
+    return lista.sort((a, b) => {
+      // Pausados sempre no fundo
+      if (a.ativo !== b.ativo) return a.ativo ? -1 : 1;
+
+      // Sem preço no fundo (acima dos pausados)
+      const semPrecoA = a.precoAtual === null;
+      const semPrecoB = b.precoAtual === null;
+      if (semPrecoA !== semPrecoB) return semPrecoA ? 1 : -1;
+
+      const deltaA = (a.precoAtual ?? 0) - (a.precoAnterior ?? a.precoAtual ?? 0);
+      const deltaB = (b.precoAtual ?? 0) - (b.precoAnterior ?? b.precoAtual ?? 0);
+      const pctA = a.precoAnterior ? (deltaA / a.precoAnterior) * 100 : 0;
+      const pctB = b.precoAnterior ? (deltaB / b.precoAnterior) * 100 : 0;
+
+      // 0 = queda, 1 = estável, 2 = alta
+      const catA = deltaA < -0.01 ? 0 : deltaA > 0.01 ? 2 : 1;
+      const catB = deltaB < -0.01 ? 0 : deltaB > 0.01 ? 2 : 1;
+
+      if (catA !== catB) return catA - catB;
+
+      // Dentro de quedas: maior desconto percentual primeiro
+      if (catA === 0) return pctA - pctB;
+
+      return 0;
+    });
   }, [busca, produtos]);
 
   const ativos = produtos.filter((p) => p.ativo);
