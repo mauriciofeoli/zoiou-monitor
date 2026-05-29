@@ -1,6 +1,7 @@
 # Zoiou — contexto para agentes de IA
 
 > Leia este arquivo inteiro antes de qualquer tarefa. Ele é o mapa do repositório.
+> Para lógica de preço, notificação, scraping ou banco — leia também **`BUSINESS_RULES.md`**.
 
 ---
 
