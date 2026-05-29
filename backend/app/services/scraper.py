@@ -87,11 +87,66 @@ def _candidatos_com_rs(texto: str) -> list[float]:
     return resultado
 
 
-def _extrair_preco_de_sopa(sopa: BeautifulSoup) -> float | None:
-    """Extrai preço de um HTML parseado com múltiplas estratégias."""
+def _preco_pix_de_candidatos(candidatos: list[float]) -> float:
+    """Dado uma lista de preços do mesmo elemento, retorna o PIX (menor válido, filtrando parcelas)."""
+    maior = max(candidatos)
+    validos = [c for c in candidatos if c >= maior * 0.2]
+    return min(validos)
 
-    # 1. Open Graph / meta tags — refletem o preço exibido na página (mais confiável para promoções)
-    # Alguns sites usam name=, outros property= para o mesmo campo
+
+def _extrair_preco_de_sopa(sopa: BeautifulSoup) -> float | None:
+    """Extrai preço PIX/à vista de um HTML parseado. Sempre prioriza o menor preço disponível."""
+
+    # 0. PIX explícito — classe ou texto com menção direta a pix/à vista/boleto
+    _SELETORES_PIX = [
+        "[class*=pix]",
+        "[class*=avista]",
+        "[class*=boleto]",
+        "[class*=vista]",
+        "[class*=cash]",
+    ]
+    for sel in _SELETORES_PIX:
+        for el in sopa.select(sel):
+            candidatos = _candidatos_com_rs(el.get_text(strip=True))
+            if candidatos:
+                return _preco_pix_de_candidatos(candidatos)
+
+    # 1. Padrão textual PIX/à vista — antes das meta tags para evitar preço parcelado
+    _RE_PIX = re.compile(
+        r"(?:pix|à vista|avista|boleto)[:\s]*R\$\s*([\d.]+,\d{2})"
+        r"|R\$\s*([\d.]+,\d{2})\s*(?:no pix|pix|à vista|avista|no boleto)",
+        re.IGNORECASE,
+    )
+    for el in sopa.select(".info-price, [class*=price], [class*=preco], [class*=valor]"):
+        m = _RE_PIX.search(el.get_text())
+        if m:
+            val = m.group(1) or m.group(2)
+            try:
+                v = parsear_preco(val)
+                if _PRECO_MIN < v < _PRECO_MAX:
+                    return v
+            except ValueError:
+                pass
+
+    # 2. JSON-LD lowPrice — reflete o menor preço disponível (geralmente PIX)
+    for tag in sopa.find_all("script", type="application/ld+json"):
+        try:
+            dados = json.loads(tag.string or "")
+            itens = dados if isinstance(dados, list) else [dados]
+            for item in itens:
+                if "@graph" in item:
+                    itens.extend(item["@graph"])
+                if item.get("@type") in ("Product", "IndividualProduct"):
+                    ofertas = item.get("offers") or item.get("offer") or {}
+                    if isinstance(ofertas, list):
+                        ofertas = min(ofertas, key=lambda o: float(o.get("price", 0) or 0), default={})
+                    v = _preco_json(ofertas.get("lowPrice"))
+                    if v is not None:
+                        return v
+        except Exception:
+            continue
+
+    # 3. Open Graph / meta tags
     meta_og = (
         sopa.find("meta", attrs={"name": "product:price:amount"})
         or sopa.find("meta", property="product:price:amount")
@@ -101,7 +156,7 @@ def _extrair_preco_de_sopa(sopa: BeautifulSoup) -> float | None:
         if v is not None:
             return v
 
-    # 2. itemprop=price — schema.org visível
+    # 4. itemprop=price — schema.org visível
     el = sopa.find(attrs={"itemprop": "price"})
     if el:
         val = el.get("content") or el.get_text(strip=True)
@@ -110,7 +165,7 @@ def _extrair_preco_de_sopa(sopa: BeautifulSoup) -> float | None:
             if v is not None:
                 return v
 
-    # 3. Seletores CSS específicos de lojas BR com R$ explícito
+    # 5. Seletores CSS específicos de lojas BR — retorna o menor preço no elemento
     seletores_especificos = [
         ".prod-new-price",     # Terabyte, Pichau
         ".price__selling",     # Kabum
@@ -128,26 +183,9 @@ def _extrair_preco_de_sopa(sopa: BeautifulSoup) -> float | None:
         if el:
             candidatos = _candidatos_com_rs(el.get_text(strip=True))
             if candidatos:
-                # Ignora parcelas (valores pequenos) — pega o maior como preço à vista
-                return max(candidatos)
+                return _preco_pix_de_candidatos(candidatos)
 
-    # 4. Padrão "por R$X" ou "à vista R$X" — específico, baixo risco de falso positivo
-    for el in sopa.select(".info-price, [class*=price], [class*=preco]"):
-        texto = el.get_text()
-        for padrao in [
-            r"(?:por|à vista|avista)[:\s]+R\$\s*([\d.]+,\d{2})",
-            r"R\$\s*([\d.]+,\d{2})\s*(?:à vista|avista)",
-        ]:
-            m = re.search(padrao, texto, re.IGNORECASE)
-            if m:
-                try:
-                    v = parsear_preco(m.group(1))
-                    if _PRECO_MIN < v < _PRECO_MAX:
-                        return v
-                except ValueError:
-                    pass
-
-    # 5. JSON-LD (Product.offers.price) — pode ter preço sem desconto; usado como fallback
+    # 6. JSON-LD price (fallback — pode ser parcelado)
     for tag in sopa.find_all("script", type="application/ld+json"):
         try:
             dados = json.loads(tag.string or "")
@@ -159,20 +197,17 @@ def _extrair_preco_de_sopa(sopa: BeautifulSoup) -> float | None:
                     ofertas = item.get("offers") or item.get("offer") or {}
                     if isinstance(ofertas, list):
                         ofertas = min(ofertas, key=lambda o: float(o.get("price", 0) or 0), default={})
-                    for campo in ("lowPrice", "price"):
-                        v = _preco_json(ofertas.get(campo))
-                        if v is not None:
-                            return v
+                    v = _preco_json(ofertas.get("price"))
+                    if v is not None:
+                        return v
         except Exception:
             continue
 
-    # 6. Fallback conservador: só aceita R$ explícito em elementos de preço
+    # 7. Fallback: menor preço com R$ explícito em elementos de preço
     for el in sopa.select(".info-price, [class*=price], [class*=preco]"):
         candidatos = _candidatos_com_rs(el.get_text())
         if candidatos:
-            maior = max(candidatos)
-            candidatos = [c for c in candidatos if c >= maior * 0.1]
-            return max(candidatos)
+            return _preco_pix_de_candidatos(candidatos)
 
     return None
 
