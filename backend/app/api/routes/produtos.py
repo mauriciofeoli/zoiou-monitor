@@ -8,6 +8,7 @@ from app.api.deps import obter_cliente_rls, obter_usuario_autenticado
 from app.core.database import obter_cliente as _db_direto
 from app.schemas.produto import ProdutoCreate, ProdutoPatch, ProdutoResponse
 from app.services.historico import buscar_ultimo_preco, buscar_ultimos_precos, registrar_preco
+from app.services.notificacao import despachar_notificacoes
 from app.services.scraper import extrair_metadados_produto, extrair_preco, extrair_produto_completo
 
 router = APIRouter(prefix="/produtos", tags=["produtos"])
@@ -31,15 +32,28 @@ async def _capturar_preco_background(produto_id: str, url: str) -> None:
 
 
 async def _atualizar_preco_forcado_background(produto_id: str, url: str) -> None:
-    """Captura e salva preço atual, independente de já haver registros."""
+    """Captura e salva preço atual; notifica usuários se o preço mudou."""
     try:
         db = await _db_direto()
+        preco_anterior = await buscar_ultimo_preco(db, produto_id)
         preco = await extrair_preco(url)
-        if preco is not None:
-            await registrar_preco(db, produto_id, preco)
-            logger.info("BG atualizar-todos: R$ %.2f para %s", preco, url)
-        else:
+        if preco is None:
             logger.warning("BG atualizar-todos: preço não encontrado para %s", url)
+            return
+        await registrar_preco(db, produto_id, preco)
+        logger.info("BG atualizar-todos: R$ %.2f para %s", preco, url)
+        if preco_anterior is not None and abs(preco - preco_anterior) > 0.01:
+            produto = await db.table("produtos").select("nome, loja").eq("id", produto_id).single().execute()
+            if produto.data:
+                await despachar_notificacoes(
+                    db=db,
+                    produto_id=produto_id,
+                    nome=produto.data["nome"],
+                    loja=produto.data.get("loja") or "",
+                    url=url,
+                    preco_anterior=preco_anterior,
+                    preco_atual=preco,
+                )
     except Exception as exc:
         logger.error("BG atualizar-todos %s: %s", url, exc)
 
@@ -242,9 +256,20 @@ async def atualizar_preco_agora(
             p["nome"] = metadados["nome"]
             p["imagem"] = metadados.get("imagem") or p.get("imagem")
 
+    preco_anterior_valor = await buscar_ultimo_preco(db_s, produto_id)
     preco_novo = await extrair_preco(url)
     if preco_novo is not None:
         await registrar_preco(db_s, produto_id, preco_novo)
+        if preco_anterior_valor is not None and abs(preco_novo - preco_anterior_valor) > 0.01:
+            await despachar_notificacoes(
+                db=db,
+                produto_id=produto_id,
+                nome=p["nome"],
+                loja=p.get("loja") or "",
+                url=url,
+                preco_anterior=preco_anterior_valor,
+                preco_atual=preco_novo,
+            )
 
     preco_atual, preco_anterior = await buscar_ultimos_precos(db, produto_id)
     ativo = lista.data[0]["ativo"]
