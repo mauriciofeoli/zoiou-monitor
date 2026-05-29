@@ -135,6 +135,19 @@ className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-
 className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium bg-muted text-muted-foreground ring-1 ring-border"
 ```
 
+### Toasts (Sonner)
+
+Biblioteca: **Sonner** v2, configurada em `frontend/src/app/providers.tsx` com `richColors`.
+
+| Tipo | Função | Cor |
+|------|--------|-----|
+| Sucesso | `toast.success("Até logo!")` | Azul brand (`--brand`) |
+| Erro | `toast.error("Mensagem")` | Vermelho (`--destructive`) |
+
+A cor brand nos toasts de sucesso é aplicada via CSS vars (`--success-bg`, `--success-border`, `--success-text`) no elemento `<Toaster>`, que as propaga por herança CSS para os filhos.
+
+---
+
 ### Badge de preço histórico
 ```tsx
 // Componente: frontend/src/components/BadgePrecoHistorico.tsx

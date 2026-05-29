@@ -8,11 +8,19 @@ import { AuthProvider } from "@/hooks/use-auth";
 
 function ToasterWithTheme() {
   const { resolvedTheme } = useTheme();
+  const isDark = resolvedTheme === "dark";
   return (
     <Toaster
       richColors
       position="top-right"
-      theme={(resolvedTheme ?? "light") as "light" | "dark"}
+      theme={isDark ? "dark" : "light"}
+      style={
+        {
+          "--success-bg": isDark ? "oklch(0.12 0.05 250)" : "oklch(0.95 0.04 250)",
+          "--success-border": isDark ? "oklch(0.22 0.1 250)" : "oklch(0.85 0.08 250)",
+          "--success-text": isDark ? "oklch(0.68 0.2 250)" : "oklch(0.52 0.22 245)",
+        } as React.CSSProperties
+      }
     />
   );
 }
