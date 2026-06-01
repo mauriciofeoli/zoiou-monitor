@@ -1,27 +1,47 @@
 "use client";
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { CheckCircle2, Loader2, MessageCircle, Send, Unlink } from "lucide-react";
+import { Bell, BellOff, CheckCircle2, Loader2, Send, Unlink } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Header } from "@/components/Header";
 import { useAuth } from "@/hooks/use-auth";
-import { atualizarPreferencias, iniciarConexaoTelegram, obterPerfil, testarTelegram } from "@/lib/api";
+import {
+  atualizarPreferencias,
+  iniciarConexaoTelegram,
+  obterPerfil,
+  removerPushSubscription,
+  salvarPushSubscription,
+  testarTelegram,
+} from "@/lib/api";
+
+const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? "";
+
+function urlBase64ToUint8Array(base64: string): ArrayBuffer {
+  const padding = "=".repeat((4 - (base64.length % 4)) % 4);
+  const b64 = (base64 + padding).replace(/-/g, "+").replace(/_/g, "/");
+  const raw = atob(b64);
+  const buf = new ArrayBuffer(raw.length);
+  const view = new Uint8Array(buf);
+  for (let i = 0; i < raw.length; i++) view[i] = raw.charCodeAt(i);
+  return buf;
+}
 
 export default function Configuracoes() {
   const { usuario, carregando: carregandoAuth } = useAuth();
   const router = useRouter();
   const queryClient = useQueryClient();
-  const [salvando, setSalvando] = useState(false);
-  const [conectando, setConectando] = useState(false);
-  const [testando, setTestando] = useState(false);
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  const [conectando, setConectando] = useState(false);
+  const [testando, setTestando] = useState(false);
+  const [ativandoPush, setAtivandoPush] = useState(false);
+  const [pushAtivo, setPushAtivo] = useState(false);
+  const [pushSuportado, setPushSuportado] = useState(true);
+
   useEffect(() => {
-    if (!carregandoAuth && !usuario) {
-      router.push("/login");
-    }
+    if (!carregandoAuth && !usuario) router.push("/login");
   }, [usuario, carregandoAuth, router]);
 
   const { data: perfil, isLoading } = useQuery({
@@ -30,13 +50,19 @@ export default function Configuracoes() {
     enabled: !!usuario,
   });
 
-  const [notifAtiva, setNotifAtiva] = useState(false);
-
+  // Verifica estado atual do push ao carregar
   useEffect(() => {
-    if (perfil) {
-      setNotifAtiva(perfil.notifTelegram);
+    if (typeof window === "undefined") return;
+    if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
+      setPushSuportado(false);
+      return;
     }
-  }, [perfil]);
+    navigator.serviceWorker.register("/sw.js").then((reg) => {
+      reg.pushManager.getSubscription().then((sub) => {
+        setPushAtivo(!!sub);
+      });
+    });
+  }, []);
 
   useEffect(() => {
     return () => {
@@ -44,13 +70,12 @@ export default function Configuracoes() {
     };
   }, []);
 
-  async function handleConectar() {
+  async function handleConectarTelegram() {
     setConectando(true);
     try {
       const { url } = await iniciarConexaoTelegram();
       window.open(url, "_blank");
 
-      // polling: detecta quando telegram_id aparecer no perfil
       let tentativas = 0;
       pollingRef.current = setInterval(async () => {
         tentativas++;
@@ -60,9 +85,7 @@ export default function Configuracoes() {
           clearInterval(pollingRef.current!);
           pollingRef.current = null;
           setConectando(false);
-          if (atualizado?.telegramId) {
-            toast.success("Telegram conectado!");
-          }
+          if (atualizado?.telegramId) toast.success("Telegram conectado!");
         }
       }, 2000);
     } catch {
@@ -71,7 +94,7 @@ export default function Configuracoes() {
     }
   }
 
-  async function handleDesconectar() {
+  async function handleDesconectarTelegram() {
     try {
       await atualizarPreferencias({ notifTelegram: false, telegramId: null });
       await queryClient.invalidateQueries({ queryKey: ["perfil"] });
@@ -81,28 +104,50 @@ export default function Configuracoes() {
     }
   }
 
-  async function handleToggleNotif(ativo: boolean) {
-    setNotifAtiva(ativo);
+  async function handleToggleTelegram(ativo: boolean) {
     try {
       await atualizarPreferencias({ notifTelegram: ativo });
       await queryClient.invalidateQueries({ queryKey: ["perfil"] });
     } catch {
-      setNotifAtiva(!ativo);
       toast.error("Não foi possível salvar.");
     }
   }
 
-  async function handleSalvar() {
-    setSalvando(true);
+  async function handleAtivarPush() {
+    setAtivandoPush(true);
     try {
-      await atualizarPreferencias({ notifTelegram: notifAtiva });
-      await queryClient.invalidateQueries({ queryKey: ["perfil"] });
-      toast.success("Preferências salvas!");
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Não foi possível salvar as preferências.";
-      toast.error(msg);
+      const permissao = await Notification.requestPermission();
+      if (permissao !== "granted") {
+        toast.error("Permissão negada. Habilite notificações nas configurações do browser.");
+        return;
+      }
+      const reg = await navigator.serviceWorker.register("/sw.js");
+      const sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+      });
+      await salvarPushSubscription(sub);
+      setPushAtivo(true);
+      toast.success("Notificações do site ativadas!");
+    } catch {
+      toast.error("Não foi possível ativar as notificações.");
     } finally {
-      setSalvando(false);
+      setAtivandoPush(false);
+    }
+  }
+
+  async function handleDesativarPush() {
+    try {
+      const reg = await navigator.serviceWorker.getRegistration("/sw.js");
+      if (reg) {
+        const sub = await reg.pushManager.getSubscription();
+        if (sub) await sub.unsubscribe();
+      }
+      await removerPushSubscription();
+      setPushAtivo(false);
+      toast.success("Notificações do site desativadas.");
+    } catch {
+      toast.error("Não foi possível desativar.");
     }
   }
 
@@ -157,17 +202,17 @@ export default function Configuracoes() {
                     <button
                       type="button"
                       role="switch"
-                      aria-checked={notifAtiva}
-                      onClick={() => handleToggleNotif(!notifAtiva)}
+                      aria-checked={perfil?.notifTelegram}
+                      onClick={() => handleToggleTelegram(!perfil?.notifTelegram)}
                       className={[
                         "relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full transition-colors",
-                        notifAtiva ? "bg-success" : "bg-muted",
+                        perfil?.notifTelegram ? "bg-success" : "bg-muted",
                       ].join(" ")}
                     >
                       <span
                         className={[
                           "inline-block h-5 w-5 translate-y-0.5 transform rounded-full bg-background shadow transition-transform",
-                          notifAtiva ? "translate-x-[22px]" : "translate-x-0.5",
+                          perfil?.notifTelegram ? "translate-x-[22px]" : "translate-x-0.5",
                         ].join(" ")}
                       />
                     </button>
@@ -182,7 +227,7 @@ export default function Configuracoes() {
                   <button
                     type="button"
                     disabled={conectando}
-                    onClick={handleConectar}
+                    onClick={handleConectarTelegram}
                     className="mt-3 inline-flex items-center gap-2 rounded-full bg-foreground px-4 py-2 text-sm font-medium text-background hover:bg-foreground/90 disabled:opacity-60 transition-colors"
                   >
                     {conectando ? (
@@ -219,7 +264,7 @@ export default function Configuracoes() {
                     </button>
                     <button
                       type="button"
-                      onClick={handleDesconectar}
+                      onClick={handleDesconectarTelegram}
                       className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-3 py-1.5 text-sm text-muted-foreground hover:bg-card hover:text-foreground transition-colors"
                     >
                       <Unlink className="h-3.5 w-3.5" />
@@ -231,18 +276,56 @@ export default function Configuracoes() {
             </div>
           </div>
 
-          {/* WhatsApp — em breve */}
-          <div className="rounded-2xl border border-border bg-card p-5 opacity-50 cursor-not-allowed">
+          {/* Push do browser */}
+          <div className={["rounded-2xl border border-border bg-card p-5 transition-colors", !pushSuportado ? "opacity-50" : ""].join(" ")}>
             <div className="flex items-start gap-4">
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-secondary text-foreground">
-                <MessageCircle className="h-5 w-5" />
+                {pushAtivo ? <Bell className="h-5 w-5" /> : <BellOff className="h-5 w-5" />}
               </div>
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <h3 className="font-serif text-xl text-ink">WhatsApp</h3>
-                  <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">em breve</span>
+                <div className="flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-serif text-xl text-ink">Notificações do site</h3>
+                    {pushAtivo && (
+                      <span className="flex items-center gap-1 rounded-full bg-success/10 px-2 py-0.5 text-xs text-success">
+                        <CheckCircle2 className="h-3 w-3" />
+                        Ativo
+                      </span>
+                    )}
+                    {!pushSuportado && (
+                      <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+                        não suportado
+                      </span>
+                    )}
+                  </div>
                 </div>
-                <p className="mt-1 text-sm text-muted-foreground">Alertas no seu número, sem precisar abrir o app.</p>
+
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Alertas direto no browser, mesmo com o site fechado.
+                </p>
+
+                {pushSuportado && !pushAtivo && (
+                  <button
+                    type="button"
+                    disabled={ativandoPush}
+                    onClick={handleAtivarPush}
+                    className="mt-3 inline-flex items-center gap-2 rounded-full bg-foreground px-4 py-2 text-sm font-medium text-background hover:bg-foreground/90 disabled:opacity-60 transition-colors"
+                  >
+                    {ativandoPush ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                    {ativandoPush ? "Ativando..." : "Ativar notificações"}
+                  </button>
+                )}
+
+                {pushSuportado && pushAtivo && (
+                  <button
+                    type="button"
+                    onClick={handleDesativarPush}
+                    className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-3 py-1.5 text-sm text-muted-foreground hover:bg-card hover:text-foreground transition-colors"
+                  >
+                    <BellOff className="h-3.5 w-3.5" />
+                    Desativar
+                  </button>
+                )}
               </div>
             </div>
           </div>
@@ -257,25 +340,21 @@ export default function Configuracoes() {
           </div>
           <button
             type="button"
-            onClick={() => handleToggleNotif(false)}
+            onClick={async () => {
+              try {
+                await atualizarPreferencias({ notifTelegram: false });
+                await queryClient.invalidateQueries({ queryKey: ["perfil"] });
+                if (pushAtivo) await handleDesativarPush();
+                toast.success("Modo silencioso ativado.");
+              } catch {
+                toast.error("Não foi possível salvar.");
+              }
+            }}
             className="rounded-full border border-border bg-background px-4 py-2 text-sm hover:bg-card"
           >
             Ativar
           </button>
         </div>
-
-        {telegramConectado && (
-          <div className="mt-8 flex justify-end">
-            <button
-              onClick={handleSalvar}
-              disabled={salvando}
-              className="inline-flex items-center gap-2 rounded-full bg-foreground px-6 py-3 text-sm font-medium text-background hover:bg-foreground/90 disabled:opacity-60 transition-colors"
-            >
-              {salvando && <Loader2 className="h-4 w-4 animate-spin" />}
-              {salvando ? "Salvando..." : "Salvar preferências"}
-            </button>
-          </div>
-        )}
       </main>
     </div>
   );

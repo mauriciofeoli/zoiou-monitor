@@ -104,9 +104,7 @@ function mapearUsuario(u: Record<string, unknown>): Usuario {
     id: u.id as string,
     email: u.email as string,
     telegramId: (u.telegram_id as string | null) ?? null,
-    whatsapp: (u.whatsapp as string | null) ?? null,
     notifTelegram: (u.notif_telegram as boolean) ?? false,
-    notifWhatsapp: (u.notif_whatsapp as boolean) ?? false,
     notifEmail: (u.notif_email as boolean) ?? true,
   };
 }
@@ -152,13 +150,23 @@ export async function obterPerfil(): Promise<Usuario> {
 export async function atualizarPreferencias(prefs: PreferenciasUpdate): Promise<Usuario> {
   const payload: Record<string, unknown> = {};
   if (prefs.telegramId !== undefined) payload.telegram_id = prefs.telegramId;
-  if (prefs.whatsapp !== undefined) payload.whatsapp = prefs.whatsapp;
   if (prefs.notifTelegram !== undefined) payload.notif_telegram = prefs.notifTelegram;
-  if (prefs.notifWhatsapp !== undefined) payload.notif_whatsapp = prefs.notifWhatsapp;
   if (prefs.notifEmail !== undefined) payload.notif_email = prefs.notifEmail;
 
   const dado = await patch<Record<string, unknown>>("/api/usuarios/me/preferencias", payload);
   return mapearUsuario(dado);
+}
+
+export async function salvarPushSubscription(subscription: PushSubscription): Promise<void> {
+  await post<unknown>("/api/usuarios/me/push/subscription", subscription.toJSON());
+}
+
+export async function removerPushSubscription(): Promise<void> {
+  const token = await tokenAtual();
+  await fetch(`${API_URL}/api/usuarios/me/push/subscription`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${token}` },
+  });
 }
 
 export async function testarTelegram(): Promise<void> {

@@ -4,6 +4,7 @@ from supabase import AsyncClient
 
 from app.services.email import enviar_notificacao_email
 from app.services.historico import buscar_historico_produto, eh_preco_historico
+from app.services.push import enviar_push
 from app.services.telegram import enviar_notificacao_telegram
 
 logger = logging.getLogger(__name__)
@@ -16,7 +17,7 @@ async def _buscar_usuarios_do_produto(
     """Retorna usuários com o produto ativo na lista de desejos."""
     resposta = (
         await db.table("lista_desejos")
-        .select("usuario_id, usuarios(email, telegram_id, notif_email, notif_telegram)")
+        .select("usuario_id, usuarios(email, telegram_id, notif_email, notif_telegram, push_subscription)")
         .eq("produto_id", produto_id)
         .eq("ativo", True)
         .execute()
@@ -65,4 +66,14 @@ async def despachar_notificacoes(
                 preco_atual=preco_atual,
                 url=url,
                 eh_historico=historico_minimo,
+            )
+
+        if usuario.get("push_subscription"):
+            diferenca = preco_atual - preco_anterior
+            emoji = "📉" if diferenca < 0 else "📈"
+            await enviar_push(
+                subscription=usuario["push_subscription"],
+                titulo=f"{emoji} {nome}",
+                corpo=f"De R$ {preco_anterior:,.2f} → R$ {preco_atual:,.2f}",
+                url=url,
             )

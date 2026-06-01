@@ -27,16 +27,12 @@ export interface Usuario {
   id: string;
   email: string;
   telegramId: string | null;
-  whatsapp: string | null;
   notifTelegram: boolean;
-  notifWhatsapp: boolean;
   notifEmail: boolean;
 }
 
 export interface PreferenciasUpdate {
   telegramId?: string | null;
-  whatsapp?: string | null;
   notifTelegram?: boolean;
-  notifWhatsapp?: boolean;
   notifEmail?: boolean;
 }
