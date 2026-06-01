@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Header } from "@/components/Header";
 import { useAuth } from "@/hooks/use-auth";
-import { atualizarPreferencias, obterPerfil } from "@/lib/api";
+import { atualizarPreferencias, obterPerfil, testarTelegram } from "@/lib/api";
 
 interface Canal {
   id: "telegram";
@@ -32,6 +32,7 @@ export default function Configuracoes() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const [salvando, setSalvando] = useState(false);
+  const [testando, setTestando] = useState(false);
 
   useEffect(() => {
     if (!carregandoAuth && !usuario) {
@@ -139,12 +140,34 @@ export default function Configuracoes() {
                     </div>
                     <p className="mt-1 text-sm text-muted-foreground">{canal.descricao}</p>
                     {ativo && (
-                      <input
-                        value={valores[canal.id]}
-                        onChange={(e) => setValores((v) => ({ ...v, [canal.id]: e.target.value }))}
-                        placeholder={canal.placeholder}
-                        className="mt-3 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                      />
+                      <div className="mt-3 flex gap-2">
+                        <input
+                          value={valores[canal.id]}
+                          onChange={(e) => setValores((v) => ({ ...v, [canal.id]: e.target.value }))}
+                          placeholder={canal.placeholder}
+                          className="flex-1 rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                        />
+                        {valores[canal.id] && (
+                          <button
+                            type="button"
+                            disabled={testando}
+                            onClick={async () => {
+                              setTestando(true);
+                              try {
+                                await testarTelegram();
+                                toast.success("Mensagem de teste enviada!");
+                              } catch {
+                                toast.error("Falha ao enviar. Verifique o ID e tente novamente.");
+                              } finally {
+                                setTestando(false);
+                              }
+                            }}
+                            className="shrink-0 rounded-lg border border-border bg-background px-3 py-2 text-sm hover:bg-card disabled:opacity-60 transition-colors"
+                          >
+                            {testando ? <Loader2 className="h-4 w-4 animate-spin" /> : "Testar"}
+                          </button>
+                        )}
+                      </div>
                     )}
                   </div>
                 </div>

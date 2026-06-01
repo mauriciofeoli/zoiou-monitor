@@ -160,3 +160,7 @@ export async function atualizarPreferencias(prefs: PreferenciasUpdate): Promise<
   const dado = await patch<Record<string, unknown>>("/api/usuarios/me/preferencias", payload);
   return mapearUsuario(dado);
 }
+
+export async function testarTelegram(): Promise<void> {
+  await post<unknown>("/api/usuarios/me/telegram/testar", {});
+}
