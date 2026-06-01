@@ -164,3 +164,7 @@ export async function atualizarPreferencias(prefs: PreferenciasUpdate): Promise<
 export async function testarTelegram(): Promise<void> {
   await post<unknown>("/api/usuarios/me/telegram/testar", {});
 }
+
+export async function iniciarConexaoTelegram(): Promise<{ url: string }> {
+  return post<{ url: string }>("/api/usuarios/me/telegram/conectar", {});
+}

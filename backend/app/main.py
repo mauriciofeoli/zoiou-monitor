@@ -3,7 +3,7 @@ import logging
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from app.api.routes import historico, produtos, usuarios
+from app.api.routes import historico, produtos, telegram, usuarios
 from app.core.config import configuracoes
 from app.core.limiter import RateLimitMiddleware
 from app.scheduler.jobs import iniciar_scheduler
@@ -28,6 +28,7 @@ app.add_middleware(
 app.include_router(produtos.router, prefix="/api")
 app.include_router(historico.router, prefix="/api")
 app.include_router(usuarios.router, prefix="/api")
+app.include_router(telegram.router, prefix="/api")
 
 
 @app.exception_handler(Exception)
@@ -43,6 +44,9 @@ async def handler_generico(request: Request, exc: Exception) -> JSONResponse:
 @app.on_event("startup")
 async def startup() -> None:
     iniciar_scheduler()
+    if configuracoes.telegram_bot_token and configuracoes.telegram_webhook_secret:
+        from app.services.telegram import registrar_webhook
+        await registrar_webhook(configuracoes.backend_url, configuracoes.telegram_webhook_secret)
 
 
 @app.on_event("shutdown")

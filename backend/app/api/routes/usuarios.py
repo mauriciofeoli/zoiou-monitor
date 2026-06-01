@@ -3,7 +3,7 @@ from supabase import AsyncClient
 
 from app.api.deps import obter_cliente_rls, obter_usuario_autenticado
 from app.schemas.usuario import PreferenciasUpdate, UsuarioResponse
-from app.services.telegram import enviar_notificacao_telegram
+from app.services.telegram import enviar_notificacao_telegram, gerar_token_conexao, obter_username_bot
 
 router = APIRouter(prefix="/usuarios", tags=["usuarios"])
 
@@ -104,3 +104,19 @@ async def testar_notificacao_telegram(
             detail="Falha ao enviar mensagem. Verifique o TELEGRAM_BOT_TOKEN e o telegram_id.",
         )
     return {"status": "enviado"}
+
+
+@router.post("/me/telegram/conectar", status_code=status.HTTP_200_OK)
+async def iniciar_conexao_telegram(
+    usuario: dict = Depends(obter_usuario_autenticado),
+    db: AsyncClient = Depends(obter_cliente_rls),
+) -> dict[str, str]:
+    """Gera deep link para conectar Telegram via /start TOKEN."""
+    username = await obter_username_bot()
+    if not username:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Bot Telegram não configurado.",
+        )
+    token = await gerar_token_conexao(db, usuario["id"])
+    return {"url": f"https://t.me/{username}?start={token}"}
