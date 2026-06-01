@@ -41,7 +41,7 @@ async def atualizar_preferencias(
     db: AsyncClient = Depends(obter_cliente_rls),
 ) -> UsuarioResponse:
     """Atualiza as preferências de notificação do usuário."""
-    atualizacoes = payload.model_dump(exclude_none=True)
+    atualizacoes = payload.model_dump(exclude_unset=True)
     if not atualizacoes:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
