@@ -11,6 +11,11 @@ from app.core.config import configuracoes
 logger = logging.getLogger(__name__)
 
 
+def _formatar_brl(valor: float) -> str:
+    """Formata float no padrão brasileiro: 1.920,00."""
+    return f"{valor:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+
+
 def _formatar_mensagem(
     nome: str,
     loja: str,
@@ -27,22 +32,22 @@ def _formatar_mensagem(
         return (
             f"🏆 *PREÇO HISTÓRICO — {nome}*\n"
             f"Menor preço registrado em 12 meses\n"
-            f"R$ {preco_atual:,.2f} na {loja}\n"
+            f"R$ {_formatar_brl(preco_atual)} na {loja}\n"
             f"🔗 [Ver produto]({url})"
         )
 
     if diferenca < 0:
         return (
             f"📉 *{nome} — {loja}*\n"
-            f"De R$ {preco_anterior:,.2f} → R$ {preco_atual:,.2f}\n"
-            f"↓ R$ {abs(diferenca):,.2f} a menos ({percentual:.1f}%)\n"
+            f"De R$ {_formatar_brl(preco_anterior)} → R$ {_formatar_brl(preco_atual)}\n"
+            f"↓ R$ {_formatar_brl(abs(diferenca))} a menos ({percentual:.1f}%)\n"
             f"🔗 [Ver produto]({url})"
         )
 
     return (
         f"📈 *{nome} — {loja}*\n"
-        f"De R$ {preco_anterior:,.2f} → R$ {preco_atual:,.2f}\n"
-        f"↑ R$ {diferenca:,.2f} a mais ({percentual:.1f}%)\n"
+        f"De R$ {_formatar_brl(preco_anterior)} → R$ {_formatar_brl(preco_atual)}\n"
+        f"↑ R$ {_formatar_brl(diferenca)} a mais ({percentual:.1f}%)\n"
         f"🔗 [Ver produto]({url})"
     )
 

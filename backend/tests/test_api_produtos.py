@@ -2,11 +2,13 @@
 
 Usa mocks do Supabase para não depender de infraestrutura real em CI.
 """
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from fastapi.testclient import TestClient
 
+from app.api.deps import obter_cliente_rls
+from app.core.security import obter_usuario_autenticado
 from app.main import app
 
 
@@ -42,25 +44,25 @@ class TestListarProdutos:
         assert resp.status_code == 401
 
     def test_com_token_valido_retorna_200(
-        self, client: TestClient, mock_usuario: dict, mock_produto: dict
+        self, client: TestClient, mock_usuario: dict
     ) -> None:
-        with (
-            patch("app.api.deps.obter_usuario_autenticado", return_value=mock_usuario),
-            patch("app.api.deps.obter_cliente_rls") as mock_rls,
-            patch("app.core.database.obter_cliente") as mock_db,
-        ):
-            db_mock = AsyncMock()
-            db_mock.table.return_value.select.return_value.eq.return_value.execute = AsyncMock(
-                return_value=MagicMock(data=[mock_produto])
-            )
-            mock_rls.return_value = db_mock
-            mock_db.return_value = db_mock
+        db_mock = MagicMock()
+        db_mock.table.return_value.select.return_value.eq.return_value.execute = AsyncMock(
+            return_value=MagicMock(data=[])
+        )
 
+        app.dependency_overrides[obter_usuario_autenticado] = lambda: mock_usuario
+        app.dependency_overrides[obter_cliente_rls] = lambda: db_mock
+
+        try:
             resp = client.get(
                 "/api/produtos",
                 headers={"Authorization": "Bearer token-valido"},
             )
             assert resp.status_code == 200
+            assert resp.json() == []
+        finally:
+            app.dependency_overrides.clear()
 
 
 class TestAdicionarProduto:
@@ -69,13 +71,18 @@ class TestAdicionarProduto:
         assert resp.status_code == 401
 
     def test_url_invalida_retorna_422(self, client: TestClient, mock_usuario: dict) -> None:
-        with patch("app.api.deps.obter_usuario_autenticado", return_value=mock_usuario):
+        app.dependency_overrides[obter_usuario_autenticado] = lambda: mock_usuario
+        app.dependency_overrides[obter_cliente_rls] = lambda: MagicMock()
+
+        try:
             resp = client.post(
                 "/api/produtos",
                 json={"url": "nao-e-uma-url"},
                 headers={"Authorization": "Bearer token-valido"},
             )
             assert resp.status_code == 422
+        finally:
+            app.dependency_overrides.clear()
 
 
 class TestRateLimiting:

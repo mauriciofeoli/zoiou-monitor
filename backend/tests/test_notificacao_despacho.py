@@ -1,19 +1,19 @@
 """Testes do fluxo de despacho de notificações."""
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
 from app.services.notificacao import despachar_notificacoes
 
 
-def _make_db(usuarios: list[dict]) -> AsyncMock:
+def _make_db(usuarios: list[dict]) -> MagicMock:
     """Cria um mock de AsyncClient com lista de usuários configurada."""
-    db = AsyncMock()
+    db = MagicMock()
     db.table.return_value.select.return_value.eq.return_value.eq.return_value.execute = AsyncMock(
-        return_value=AsyncMock(data=usuarios)
+        return_value=MagicMock(data=usuarios)
     )
     db.table.return_value.select.return_value.eq.return_value.gte.return_value.order.return_value.execute = AsyncMock(
-        return_value=AsyncMock(data=[])
+        return_value=MagicMock(data=[])
     )
     return db
 
