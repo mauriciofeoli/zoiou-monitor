@@ -30,7 +30,6 @@ async def obter_perfil(
         email=dados["email"],
         telegram_id=dados.get("telegram_id"),
         notif_telegram=dados.get("notif_telegram", False),
-        notif_email=dados.get("notif_email", True),
     )
 
 
@@ -63,7 +62,6 @@ async def atualizar_preferencias(
         email=dados["email"],
         telegram_id=dados.get("telegram_id"),
         notif_telegram=dados.get("notif_telegram", False),
-        notif_email=dados.get("notif_email", True),
     )
 
 

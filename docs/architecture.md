@@ -52,8 +52,7 @@ Scheduler (cron 03:00 BRT)
                             └── despachar_notificacoes(db_s, ...)
                                   ├── busca lista_desejos (todos os usuários)
                                   ├── eh_preco_historico(preco, historico_12m)
-                                  ├── enviar_notificacao_telegram(...)  se notif_telegram=True
-                                  └── enviar_notificacao_email(...)     se notif_email=True
+                                  └── enviar_notificacao_telegram(...)  se notif_telegram=True
 ```
 
 **Condição de envio:** `preco_novo is not None` AND `abs(preco_novo - preco_anterior) > 0.01`

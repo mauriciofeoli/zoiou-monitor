@@ -1,8 +1,11 @@
 import logging
+from contextlib import asynccontextmanager
+from typing import AsyncGenerator
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+
 from app.api.routes import historico, produtos, telegram, usuarios
 from app.core.config import configuracoes
 from app.core.limiter import RateLimitMiddleware
@@ -10,7 +13,20 @@ from app.scheduler.jobs import iniciar_scheduler
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s — %(name)s — %(message)s")
 
-app = FastAPI(title="Zoiou API", version="1.0.0", docs_url="/docs")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
+    iniciar_scheduler()
+    if configuracoes.telegram_bot_token and configuracoes.telegram_webhook_secret:
+        from app.services.telegram import registrar_webhook
+        await registrar_webhook(configuracoes.backend_url, configuracoes.telegram_webhook_secret)
+    yield
+    from app.scheduler.jobs import scheduler
+    if scheduler.running:
+        scheduler.shutdown()
+
+
+app = FastAPI(title="Zoiou API", version="1.0.0", docs_url="/docs", lifespan=lifespan)
 
 app.add_middleware(RateLimitMiddleware)
 
@@ -41,21 +57,6 @@ async def handler_generico(request: Request, exc: Exception) -> JSONResponse:
         status_code=500,
         content={"data": None, "error": {"code": "ERRO_INTERNO", "message": "Erro interno."}},
     )
-
-
-@app.on_event("startup")
-async def startup() -> None:
-    iniciar_scheduler()
-    if configuracoes.telegram_bot_token and configuracoes.telegram_webhook_secret:
-        from app.services.telegram import registrar_webhook
-        await registrar_webhook(configuracoes.backend_url, configuracoes.telegram_webhook_secret)
-
-
-@app.on_event("shutdown")
-async def shutdown() -> None:
-    from app.scheduler.jobs import scheduler
-    if scheduler.running:
-        scheduler.shutdown()
 
 
 @app.get("/health")

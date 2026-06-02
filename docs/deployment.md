@@ -33,7 +33,6 @@ O Zoiou usa Railway (backend) e Vercel (frontend). Ambos deployam automaticament
 | `TELEGRAM_BOT_TOKEN` | - | Token do bot (crie em @BotFather) |
 | `TELEGRAM_WEBHOOK_SECRET` | - | String aleatória para validar webhooks |
 | `BACKEND_URL` | - | URL pública do backend (para registrar webhook Telegram) |
-| `RESEND_API_KEY` | - | API key do Resend (notificações por email) |
 
 ---
 

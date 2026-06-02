@@ -2,7 +2,6 @@ import logging
 
 from supabase import AsyncClient
 
-from app.services.email import enviar_notificacao_email
 from app.services.historico import buscar_historico_produto, eh_preco_historico
 from app.services.telegram import enviar_notificacao_telegram
 
@@ -16,7 +15,7 @@ async def _buscar_usuarios_do_produto(
     """Retorna usuários com o produto ativo na lista de desejos."""
     resposta = (
         await db.table("lista_desejos")
-        .select("usuario_id, usuarios(email, telegram_id, notif_email, notif_telegram)")
+        .select("usuario_id, usuarios(telegram_id, notif_telegram)")
         .eq("produto_id", produto_id)
         .eq("ativo", True)
         .execute()
@@ -45,17 +44,6 @@ async def despachar_notificacoes(
         if not usuario:
             continue
 
-        if usuario.get("notif_email") and usuario.get("email"):
-            await enviar_notificacao_email(
-                destinatario=usuario["email"],
-                nome=nome,
-                loja=loja or "",
-                preco_anterior=preco_anterior,
-                preco_atual=preco_atual,
-                url=url,
-                eh_historico=historico_minimo,
-            )
-
         if usuario.get("notif_telegram") and usuario.get("telegram_id"):
             await enviar_notificacao_telegram(
                 telegram_id=usuario["telegram_id"],
@@ -66,4 +54,3 @@ async def despachar_notificacoes(
                 url=url,
                 eh_historico=historico_minimo,
             )
-

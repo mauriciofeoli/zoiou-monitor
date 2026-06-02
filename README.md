@@ -31,7 +31,7 @@ Monitor de preços pessoal. Cole a URL de qualquer produto, o Zoiou acompanha o 
 | Frontend | [Next.js](https://nextjs.org) 15 + [React](https://react.dev) 19 + [Tailwind](https://tailwindcss.com) v4 |
 | Banco | [Supabase](https://supabase.com) - PostgreSQL + Auth + RLS |
 | Scraping | [curl_cffi](https://github.com/lexiforest/curl_cffi) (primário) → [Playwright](https://playwright.dev) (fallback) |
-| Notificações | [Telegram Bot API](https://core.telegram.org/bots/api) · WhatsApp (em breve) |
+| Notificações | [Telegram Bot API](https://core.telegram.org/bots/api) |
 | Deploy backend | [Railway](https://railway.app) |
 | Deploy frontend | [Vercel](https://vercel.com) |
 

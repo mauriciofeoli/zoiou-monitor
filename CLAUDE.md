@@ -21,7 +21,7 @@ Para regras de negócio completas leia **`BUSINESS_RULES.md`**.
 | Frontend | Next.js 15 + React 19 + Tailwind v4, em `frontend/` |
 | Banco | Supabase — PostgreSQL + Auth + RLS |
 | Scraping | curl_cffi (path síncrono) → Playwright (fallback, background) |
-| Notificações | Telegram Bot API (ativo) · WhatsApp (em breve) |
+| Notificações | Telegram Bot API |
 | Deploy | Railway (backend) · Vercel (frontend) |
 | URLs prod | `www.zoiou.com` (frontend) · `zoiou-monitor-production.up.railway.app` (backend) |
 
@@ -80,7 +80,6 @@ extrair_preco(url)
       → despachar_notificacoes(db_s, ...)            ← service key
         → busca lista_desejos (todos os usuários)
         → envia Telegram se notif_telegram=True e telegram_id preenchido
-        → WhatsApp: planejado, ainda não implementado
 ```
 
 Notificação só sai quando `preco_novo is not None` (scraping bem-sucedido) e `abs(preco_novo - preco_anterior) > 0.01`.

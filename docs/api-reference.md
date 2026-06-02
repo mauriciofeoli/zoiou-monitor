@@ -154,8 +154,7 @@ GET /api/usuarios/me
   "id": "uuid",
   "email": "usuario@email.com",
   "telegram_id": "123456789",
-  "notif_telegram": true,
-  "notif_email": false
+  "notif_telegram": true
 }
 ```
 
@@ -169,8 +168,7 @@ Content-Type: application/json
 
 {
   "notif_telegram": true,
-  "telegram_id": "123456789",
-  "notif_email": false
+  "telegram_id": "123456789"
 }
 ```
 

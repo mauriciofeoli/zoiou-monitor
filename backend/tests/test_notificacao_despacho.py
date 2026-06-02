@@ -24,10 +24,8 @@ async def test_envia_telegram_quando_configurado() -> None:
         {
             "usuario_id": "u1",
             "usuarios": {
-                "email": "a@zoiou.com",
                 "telegram_id": "123456",
                 "notif_telegram": True,
-                "notif_email": False,
             },
         }
     ]
@@ -53,10 +51,8 @@ async def test_nao_envia_telegram_quando_desativado() -> None:
         {
             "usuario_id": "u1",
             "usuarios": {
-                "email": "a@zoiou.com",
                 "telegram_id": "123456",
                 "notif_telegram": False,
-                "notif_email": False,
             },
         }
     ]
@@ -82,10 +78,8 @@ async def test_nao_envia_sem_telegram_id() -> None:
         {
             "usuario_id": "u1",
             "usuarios": {
-                "email": "a@zoiou.com",
                 "telegram_id": None,
                 "notif_telegram": True,
-                "notif_email": False,
             },
         }
     ]
@@ -112,10 +106,8 @@ async def test_badge_historico_quando_preco_minimo() -> None:
         {
             "usuario_id": "u1",
             "usuarios": {
-                "email": "a@zoiou.com",
                 "telegram_id": "123456",
                 "notif_telegram": True,
-                "notif_email": False,
             },
         }
     ]

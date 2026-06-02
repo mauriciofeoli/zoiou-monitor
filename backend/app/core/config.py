@@ -11,7 +11,6 @@ class Configuracoes(BaseSettings):
     telegram_bot_token: str = ""
     telegram_webhook_secret: str = ""
     backend_url: str = "http://localhost:8000"
-    resend_api_key: str = ""
     frontend_url: str = "http://localhost:3000"
     frontend_urls_extras: str = ""  # origens adicionais separadas por vírgula
     ambiente: str = "development"

@@ -10,7 +10,6 @@ class UsuarioResponse(BaseModel):
     email: str
     telegram_id: str | None
     notif_telegram: bool
-    notif_email: bool
 
 
 class PreferenciasUpdate(BaseModel):
@@ -18,7 +17,6 @@ class PreferenciasUpdate(BaseModel):
 
     telegram_id: str | None = None
     notif_telegram: bool | None = None
-    notif_email: bool | None = None
 
     @field_validator("telegram_id")
     @classmethod

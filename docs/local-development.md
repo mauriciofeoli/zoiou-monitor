@@ -128,8 +128,7 @@ zoiou/
 │   │   │   ├── scraper.py      # curl_cffi + Playwright fallback
 │   │   │   ├── historico.py    # registrar/buscar preços
 │   │   │   ├── notificacao.py  # despachar notificações
-│   │   │   ├── telegram.py     # envio via Bot API
-│   │   │   └── email.py        # envio via Resend
+│   │   │   └── telegram.py     # envio via Bot API
 │   │   ├── scheduler/
 │   │   │   └── jobs.py         # cron 03:00 BRT
 │   │   └── main.py             # app FastAPI, CORS, middleware

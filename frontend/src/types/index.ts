@@ -29,11 +29,9 @@ export interface Usuario {
   email: string;
   telegramId: string | null;
   notifTelegram: boolean;
-  notifEmail: boolean;
 }
 
 export interface PreferenciasUpdate {
   telegramId?: string | null;
   notifTelegram?: boolean;
-  notifEmail?: boolean;
 }

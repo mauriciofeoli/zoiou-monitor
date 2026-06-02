@@ -106,7 +106,6 @@ function mapearUsuario(u: Record<string, unknown>): Usuario {
     email: u.email as string,
     telegramId: (u.telegram_id as string | null) ?? null,
     notifTelegram: (u.notif_telegram as boolean) ?? false,
-    notifEmail: (u.notif_email as boolean) ?? true,
   };
 }
 
@@ -152,7 +151,6 @@ export async function atualizarPreferencias(prefs: PreferenciasUpdate): Promise<
   const payload: Record<string, unknown> = {};
   if (prefs.telegramId !== undefined) payload.telegram_id = prefs.telegramId;
   if (prefs.notifTelegram !== undefined) payload.notif_telegram = prefs.notifTelegram;
-  if (prefs.notifEmail !== undefined) payload.notif_email = prefs.notifEmail;
 
   const dado = await patch<Record<string, unknown>>("/api/usuarios/me/preferencias", payload);
   return mapearUsuario(dado);

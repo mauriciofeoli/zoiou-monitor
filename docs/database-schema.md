@@ -64,7 +64,6 @@ Extensão do Supabase Auth com preferências de notificação. Criada automatica
 | `email` | `text` | Email do usuário |
 | `telegram_id` | `text` | ID do Telegram (opcional) |
 | `notif_telegram` | `boolean` | Notificações Telegram ativas |
-| `notif_email` | `boolean` | Notificações email ativas |
 | `created_at` | `timestamptz` | |
 | `updated_at` | `timestamptz` | |
 

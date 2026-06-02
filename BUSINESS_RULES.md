@@ -71,10 +71,8 @@ Quando o preço capturado é **menor que todos os registros dos últimos 365 dia
 | Canal | Status | Condição |
 |-------|--------|----------|
 | Telegram | **Ativo** | `notif_telegram = true` E `telegram_id` preenchido |
-| WhatsApp | Planejado | Não implementado ainda |
-| E-mail (Resend) | Código existe, **não usado em produção** | — |
 
-- O usuário controla quais canais recebe nas preferências (`/configuracoes`).
+- O usuário controla o canal nas preferências (`/configuracoes`).
 - Se nenhum canal estiver configurado, o preço ainda é monitorado e salvo — o usuário pode consultar pelo dashboard.
 - **Nunca enviar stack trace ou mensagem técnica** ao usuário via Telegram ou qualquer canal.
 
@@ -109,7 +107,7 @@ Quando o preço capturado é **menor que todos os registros dos últimos 365 dia
 
 ---
 
-## 9. Fora do escopo (v1 — não implementar)
+## 9. Fora do escopo (não implementar)
 
 - Links de afiliado (nunca substituir URL original)
 - Canal público de promoções no Telegram
@@ -117,9 +115,9 @@ Quando o preço capturado é **menor que todos os registros dos últimos 365 dia
 - Busca de produto por nome
 - App mobile
 - Monetização de qualquer tipo
-- Alertas por preço-alvo definido pelo usuário (ex: "avisa se baixar de R$ 300")
+- Alertas por preço-alvo definido pelo usuário
 - Integração com Zoom, Buscapé ou agregadores
-- Notificações via WhatsApp (planejado para v2)
+- WhatsApp, e-mail ou qualquer canal além do Telegram
 
 ---
 
