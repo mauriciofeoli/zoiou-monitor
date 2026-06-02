@@ -270,6 +270,8 @@ def _extrair_metadados_de_sopa(sopa: BeautifulSoup, url: str) -> dict:
             if el_img:
                 imagem = str(el_img.get("src") or el_img.get("content") or "")
 
+    if imagem.startswith("http://"):
+        imagem = "https://" + imagem[7:]
     return {"nome": nome, "loja": loja, "imagem": imagem}
 
 
