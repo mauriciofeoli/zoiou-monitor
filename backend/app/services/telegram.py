@@ -2,7 +2,6 @@ import logging
 import uuid
 from datetime import datetime, timedelta, timezone
 
-import httpx
 from supabase import AsyncClient
 from telegram import Bot
 from telegram.constants import ParseMode
