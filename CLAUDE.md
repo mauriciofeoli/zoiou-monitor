@@ -23,7 +23,7 @@ Para regras de negócio completas leia **`BUSINESS_RULES.md`**.
 | Scraping | curl_cffi (path síncrono) → Playwright (fallback, background) |
 | Notificações | Telegram Bot API (ativo) · WhatsApp (em breve) |
 | Deploy | Railway (backend) · Vercel (frontend) |
-| URLs prod | `zoiou-monitor-production.up.railway.app` · `zoiou-monitor-bzpk.vercel.app` |
+| URLs prod | `www.zoiou.com` (frontend) · `zoiou-monitor-production.up.railway.app` (backend) |
 
 ---
 
@@ -35,6 +35,7 @@ Para regras de negócio completas leia **`BUSINESS_RULES.md`**.
 | `backend/app/api/routes/produtos.py` | CRUD da lista de desejos + scraping imediato + atualizar-todos |
 | `backend/app/api/routes/historico.py` | Histórico de preços por produto |
 | `backend/app/api/routes/usuarios.py` | Perfil e preferências de notificação |
+| `backend/app/api/routes/telegram.py` | Webhook do bot Telegram + conectar/testar |
 | `backend/app/api/deps.py` | `obter_usuario_autenticado`, `obter_cliente_rls` |
 | `backend/app/core/database.py` | `obter_cliente()` → service key (bypassa RLS) |
 | `backend/app/core/limiter.py` | Rate limiting por IP (middleware Starlette) |
@@ -96,18 +97,20 @@ Notificação só sai quando `preco_novo is not None` (scraping bem-sucedido) e 
 - Docstring curta em toda função pública.
 
 ### TypeScript (frontend)
-- **strict mode**. Nunca `any` — use `unknown`.
+- **strict mode**. Nunca `any`, use `unknown`.
 - `interface` ou `type` explícito em toda prop de componente.
 - Nomes de componentes em **PascalCase**, funções/variáveis em **camelCase**.
 - Sem `console.log` em produção.
 
 ### Commits (Conventional Commits)
 ```
-feat: descrição do que foi adicionado
-fix: descrição do que foi corrigido
-chore: limpeza, dependências, configuração
+feat:     nova funcionalidade
+fix:      correção de bug
+chore:    limpeza, dependências, configuração
 refactor: reestruturação sem mudança de comportamento
-docs: apenas documentação
+docs:     apenas documentação
+test:     adicionar ou corrigir testes
+style:    formatação, sem mudança de lógica
 ```
 
 ---
@@ -137,7 +140,32 @@ POST   /api/produtos/{id}/atualizar         scraping imediato de um produto
 GET    /api/produtos/{id}/historico         histórico de preços
 GET    /api/usuarios/me                     perfil do usuário
 PATCH  /api/usuarios/me/preferencias        salva preferências de notificação
+POST   /api/usuarios/me/telegram/conectar   gera link de conexão Telegram
+POST   /api/usuarios/me/telegram/testar     envia mensagem de teste Telegram
 GET    /health                              health check
+```
+
+---
+
+## Estrutura de documentação e CI
+
+```
+docs/
+  architecture.md       diagrama, dois clientes Supabase, fluxo de notificação
+  api-reference.md      todos os endpoints com request/response
+  database-schema.md    tabelas, colunas, RLS policies
+  deployment.md         Railway + Vercel + Supabase + domínio customizado
+  local-development.md  setup detalhado para contribuidores
+
+.github/
+  workflows/ci.yml                pytest + ruff + tsc + eslint em todo PR
+  ISSUE_TEMPLATE/bug_report.md
+  ISSUE_TEMPLATE/feature_request.md
+  PULL_REQUEST_TEMPLATE.md
+
+CONTRIBUTING.md         workflow de branches, setup local, conventional commits
+SECURITY.md             política de divulgação responsável
+LICENSE                 MIT
 ```
 
 ---
