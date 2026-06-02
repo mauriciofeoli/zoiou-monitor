@@ -15,6 +15,18 @@ router = APIRouter(prefix="/produtos", tags=["produtos"])
 logger = logging.getLogger(__name__)
 
 
+def _nome_invalido(nome: str, url: str, loja: str) -> bool:
+    """True quando o nome não representa um produto — vazio, é a URL, loja ou homepage title."""
+    if not nome or nome == url or nome == loja:
+        return True
+    if " | " in nome:
+        marca = loja.split(".")[0].lower()
+        prefixo = nome.split(" | ")[0].lower()
+        if marca and marca in prefixo:
+            return True
+    return False
+
+
 async def _notificar_variacao(
     db: AsyncClient,
     produto_id: str,
@@ -77,16 +89,19 @@ async def _atualizar_preco_forcado_background(
 async def _atualizar_metadados_background(
     produto_id: str, url: str, imagem_atual: str | None, loja: str = ""
 ) -> None:
-    """Atualiza nome e imagem quando curl_cffi retornou metadados genéricos."""
+    """Atualiza nome e imagem quando curl_cffi retornou metadados genéricos ou imagem ausente."""
     try:
         db = await _db_direto()
         meta = await extrair_metadados_produto(url)
         nome = meta.get("nome", "")
-        if nome and nome != url and nome != loja:
-            await db.table("produtos").update({
-                "nome": nome,
-                "imagem": meta.get("imagem") or imagem_atual,
-            }).eq("id", produto_id).execute()
+        imagem_nova = meta.get("imagem", "")
+        updates: dict = {}
+        if nome and not _nome_invalido(nome, url, loja):
+            updates["nome"] = nome
+        if imagem_nova and not imagem_atual:
+            updates["imagem"] = imagem_nova
+        if updates:
+            await db.table("produtos").update(updates).eq("id", produto_id).execute()
             logger.info("Background: metadados atualizados para %s", url)
     except Exception as exc:
         logger.error("Background metadados %s: %s", url, exc)
@@ -186,9 +201,8 @@ async def adicionar_produto(
     if preco_atual is None:
         background_tasks.add_task(_capturar_preco_background, produto_id, url)
 
-    loja_p = p.get("loja", "")
-    nome_invalido = not p.get("nome") or p["nome"] == url or p["nome"] == loja_p
-    if nome_invalido:
+    loja_p = p.get("loja", "") or ""
+    if _nome_invalido(p.get("nome", "") or "", url, loja_p) or not p.get("imagem"):
         background_tasks.add_task(_atualizar_metadados_background, produto_id, url, p.get("imagem"), loja_p)
 
     return ProdutoResponse(
@@ -271,17 +285,20 @@ async def atualizar_preco_agora(
     p = produto_db.data
     url = p["url"]
 
-    loja_p = p.get("loja", "")
-    if not p["nome"] or p["nome"] == url or p["nome"] == loja_p:
+    loja_p = p.get("loja", "") or ""
+    if _nome_invalido(p["nome"], url, loja_p) or not p.get("imagem"):
         metadados = await extrair_metadados_produto(url)
         novo_nome = metadados.get("nome", "")
-        if novo_nome and novo_nome != loja_p:
-            await db_s.table("produtos").update({
-                "nome": novo_nome,
-                "imagem": metadados.get("imagem") or p.get("imagem"),
-            }).eq("id", produto_id).execute()
+        nova_imagem = metadados.get("imagem", "")
+        updates: dict = {}
+        if novo_nome and not _nome_invalido(novo_nome, url, loja_p):
+            updates["nome"] = novo_nome
             p["nome"] = novo_nome
-            p["imagem"] = metadados.get("imagem") or p.get("imagem")
+        if nova_imagem and not p.get("imagem"):
+            updates["imagem"] = nova_imagem
+            p["imagem"] = nova_imagem
+        if updates:
+            await db_s.table("produtos").update(updates).eq("id", produto_id).execute()
 
     preco_novo = await extrair_preco(url)
     if preco_novo is not None:

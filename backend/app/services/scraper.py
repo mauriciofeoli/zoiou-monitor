@@ -217,6 +217,15 @@ def _nome_parece_dominio(nome: str) -> bool:
     return bool(re.match(r"^[\w.-]+\.(com\.br|com|br|net|org|io)$", nome.lower().strip()))
 
 
+def _nome_parece_homepage(nome: str, loja: str) -> bool:
+    """True quando o nome parece ser o título da homepage da loja (ex: 'Shopee | Ofertas...')."""
+    if " | " not in nome:
+        return False
+    marca = loja.split(".")[0].lower()
+    prefixo = nome.split(" | ")[0].lower()
+    return bool(marca) and marca in prefixo
+
+
 def _extrair_metadados_de_sopa(sopa: BeautifulSoup, url: str) -> dict:
     """Extrai nome, loja e imagem de um HTML parseado."""
     loja = urlparse(url).netloc.replace("www.", "")
@@ -385,14 +394,19 @@ async def extrair_preco(url: str) -> float | None:
 
 
 async def extrair_metadados_produto(url: str) -> dict:
-    """Extrai nome, loja e imagem do produto. Rejeita nomes que parecem domínios."""
+    """Extrai nome, loja e imagem do produto. Rejeita nomes que parecem domínios ou homepages."""
     loja = urlparse(url).netloc.replace("www.", "")
     for buscar in [_buscar_html_worker, _buscar_html_scraper_api, _buscar_html_cffi, _buscar_html_playwright]:
         html = await buscar(url)
         if html:
             meta = _extrair_metadados_de_sopa(BeautifulSoup(html, "html.parser"), url)
             nome = meta["nome"]
-            if nome and nome != loja and not _nome_parece_dominio(nome):
+            if (
+                nome
+                and nome != loja
+                and not _nome_parece_dominio(nome)
+                and not _nome_parece_homepage(nome, loja)
+            ):
                 return meta
     return {"nome": "", "loja": loja, "imagem": ""}
 
