@@ -36,6 +36,7 @@ class ProdutoResponse(BaseModel):
     preco_anterior: float | None
     ativo: bool
     monitorando_ha_dias: int
+    ultima_atualizacao: str | None
 
 
 class ProdutoPatch(BaseModel):

@@ -5,6 +5,14 @@ import type { Produto } from "@/types";
 import { formatarBRL } from "@/lib/utils";
 import { BadgePrecoHistorico } from "./BadgePrecoHistorico";
 
+function formatarUltimaAtualizacao(iso: string | null): string {
+  if (!iso) return "sem captura";
+  const dias = Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000);
+  if (dias === 0) return "atualizado hoje";
+  if (dias === 1) return "atualizado ontem";
+  return `atualizado há ${dias} dias`;
+}
+
 interface CardProdutoProps {
   produto: Produto;
   ehHistorico?: boolean;
@@ -98,7 +106,7 @@ export function CardProduto({ produto, ehHistorico = false }: CardProdutoProps) 
         </div>
 
         <div className="flex items-center justify-between text-xs text-muted-foreground pt-2 border-t border-border/60">
-          <span>{produto.monitorandoHaDias} dias monitorando</span>
+          <span>{formatarUltimaAtualizacao(produto.ultimaAtualizacao)}</span>
           <span className="inline-flex items-center gap-1 text-foreground/70 group-hover:text-foreground transition-colors">
             ver detalhes <ExternalLink className="h-3 w-3" />
           </span>

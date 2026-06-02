@@ -111,7 +111,7 @@ async def listar_produtos(
         if not produto:
             continue
 
-        preco_atual, preco_anterior = await buscar_ultimos_precos(db, produto["id"])
+        preco_atual, preco_anterior, ultima_atualizacao = await buscar_ultimos_precos(db, produto["id"])
 
         criado_em = datetime.fromisoformat(item["criado_em"].replace("Z", "+00:00"))
         dias_monitorando = (datetime.now(timezone.utc) - criado_em).days
@@ -127,6 +127,7 @@ async def listar_produtos(
                 preco_anterior=preco_anterior,
                 ativo=item["ativo"],
                 monitorando_ha_dias=max(dias_monitorando, 0),
+                ultima_atualizacao=ultima_atualizacao,
             )
         )
     return resultado
@@ -200,6 +201,7 @@ async def adicionar_produto(
         preco_anterior=None,
         ativo=True,
         monitorando_ha_dias=0,
+        ultima_atualizacao=None,
     )
 
 
@@ -285,8 +287,7 @@ async def atualizar_preco_agora(
     if preco_novo is not None:
         await registrar_preco(db_s, produto_id, preco_novo)
 
-    # buscar_ultimos_precos retorna (atual, anterior) após o registro
-    preco_atual, preco_anterior = await buscar_ultimos_precos(db_s, produto_id)
+    preco_atual, preco_anterior, ultima_atualizacao = await buscar_ultimos_precos(db_s, produto_id)
 
     if preco_novo is not None:
         await _notificar_variacao(
@@ -305,6 +306,7 @@ async def atualizar_preco_agora(
         preco_anterior=preco_anterior,
         ativo=ativo,
         monitorando_ha_dias=0,
+        ultima_atualizacao=ultima_atualizacao,
     )
 
 
@@ -360,4 +362,5 @@ async def atualizar_produto(
         preco_anterior=None,
         ativo=payload.ativo,
         monitorando_ha_dias=0,
+        ultima_atualizacao=None,
     )

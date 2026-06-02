@@ -53,20 +53,21 @@ async def buscar_ultimo_preco(
 async def buscar_ultimos_precos(
     db: AsyncClient,
     produto_id: str,
-) -> tuple[float | None, float | None]:
-    """Retorna (preco_atual, preco_anterior) — os dois últimos registros, sem filtro de data."""
+) -> tuple[float | None, float | None, str | None]:
+    """Retorna (preco_atual, preco_anterior, ultima_atualizacao) — os dois últimos registros."""
     resposta = (
         await db.table("historico_precos")
-        .select("preco")
+        .select("preco, capturado_em")
         .eq("produto_id", produto_id)
         .order("capturado_em", desc=True)
         .limit(2)
         .execute()
     )
-    precos = [float(p["preco"]) for p in resposta.data or []]
-    preco_atual = precos[0] if precos else None
-    preco_anterior = precos[1] if len(precos) >= 2 else None
-    return preco_atual, preco_anterior
+    dados = resposta.data or []
+    preco_atual = float(dados[0]["preco"]) if dados else None
+    preco_anterior = float(dados[1]["preco"]) if len(dados) >= 2 else None
+    ultima_atualizacao = dados[0]["capturado_em"] if dados else None
+    return preco_atual, preco_anterior, ultima_atualizacao
 
 
 def eh_preco_historico(preco_atual: float, historico: list[float]) -> bool:

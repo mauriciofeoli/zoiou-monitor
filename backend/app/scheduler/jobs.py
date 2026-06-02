@@ -43,19 +43,20 @@ async def monitorar_todos_produtos() -> None:
         nome = produto["nome"]
         loja = produto.get("loja", "")
 
+        preco_anterior = await buscar_ultimo_preco(db, produto_id)
         preco_novo = await extrair_preco(url)
         if preco_novo is None:
             logger.warning("Scraping falhou para %s (%s)", nome, url)
             continue
 
-        preco_anterior = await buscar_ultimo_preco(db, produto_id)
+        if preco_anterior is not None and abs(preco_novo - preco_anterior) <= 0.01:
+            logger.info("Sem variação em %s: R$ %.2f", nome, preco_novo)
+            continue
+
         await registrar_preco(db, produto_id, preco_novo)
 
         if preco_anterior is None:
             logger.info("Primeiro preço registrado para %s: R$ %.2f", nome, preco_novo)
-            continue
-
-        if abs(preco_novo - preco_anterior) <= 0.01:
             continue
 
         logger.info(

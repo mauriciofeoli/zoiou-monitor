@@ -80,6 +80,7 @@ function mapearProduto(p: Record<string, unknown>): Produto {
     precoAnterior: p.preco_anterior != null ? Number(p.preco_anterior) : null,
     ativo: p.ativo as boolean,
     monitorandoHaDias: (p.monitorando_ha_dias as number) ?? 0,
+    ultimaAtualizacao: (p.ultima_atualizacao as string | null) ?? null,
   };
 }
 

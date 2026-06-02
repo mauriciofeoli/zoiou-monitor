@@ -13,6 +13,7 @@ export interface Produto {
   precoAnterior: number | null;
   ativo: boolean;
   monitorandoHaDias: number;
+  ultimaAtualizacao: string | null;
 }
 
 export interface HistoricoProduto {
