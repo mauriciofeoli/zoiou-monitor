@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import {
   AreaChart,
   Area,
@@ -18,6 +19,16 @@ interface GraficoHistoricoProps {
 }
 
 export function GraficoHistorico({ dados }: GraficoHistoricoProps) {
+  const data = useMemo(
+    () =>
+      dados.map((d) => ({
+        data: d.data,
+        preco: d.preco,
+        label: new Date(d.data).toLocaleDateString("pt-BR", { day: "2-digit", month: "short" }),
+      })),
+    [dados],
+  );
+
   if (!dados.length) {
     return (
       <div className="h-72 w-full flex items-center justify-center text-sm text-muted-foreground">
@@ -26,15 +37,12 @@ export function GraficoHistorico({ dados }: GraficoHistoricoProps) {
     );
   }
 
-  const precos = dados.map((d) => d.preco);
-  const min = Math.min(...precos);
-  const max = Math.max(...precos);
-
-  const data = dados.map((d) => ({
-    data: d.data,
-    preco: d.preco,
-    label: new Date(d.data).toLocaleDateString("pt-BR", { day: "2-digit", month: "short" }),
-  }));
+  let min = dados[0].preco;
+  let max = dados[0].preco;
+  for (let i = 1; i < dados.length; i++) {
+    if (dados[i].preco < min) min = dados[i].preco;
+    if (dados[i].preco > max) max = dados[i].preco;
+  }
 
   return (
     <div className="h-72 w-full">

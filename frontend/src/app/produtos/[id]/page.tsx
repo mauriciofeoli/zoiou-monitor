@@ -98,7 +98,7 @@ export default function ProdutoDetalhe() {
     }
   }
 
-  if (carregandoAuth || carregandoProdutos || carregandoHistorico) {
+  if (carregandoAuth || carregandoProdutos) {
     return (
       <div className="min-h-screen bg-background">
         <Header />
@@ -286,7 +286,13 @@ export default function ProdutoDetalhe() {
               {pontosHistorico.length} registro{pontosHistorico.length !== 1 ? "s" : ""}
             </span>
           </div>
-          <GraficoHistorico dados={pontosHistorico} />
+          {carregandoHistorico ? (
+            <div className="h-72 w-full flex items-center justify-center">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : (
+            <GraficoHistorico dados={pontosHistorico} />
+          )}
         </section>
       </main>
 

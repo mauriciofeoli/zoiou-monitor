@@ -3,7 +3,7 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2, Plus, RefreshCw, Search } from "lucide-react";
 import { ZoiouWordmark } from "@/components/ZoiouWordmark";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Header } from "@/components/Header";
 import { CardProduto } from "@/components/CardProduto";
@@ -21,14 +21,16 @@ export default function Dashboard() {
   const queryClient = useQueryClient();
   const [busca, setBusca] = useState("");
   const [modalAberto, setModalAberto] = useState(false);
-  const [atualizandoTodos, setAtualizandoTodos] = useState(false);
+  const [atualizandoTodos, iniciarTransicao] = useTransition();
   const [cooldownRestante, setCooldownRestante] = useState(0);
   const [pollandoAtualizacao, setPollandoAtualizacao] = useState(false);
 
   useEffect(() => {
-    const ts = Number(localStorage.getItem(STORAGE_KEY)) || 0;
-    const restante = Math.max(0, COOLDOWN_MS - (Date.now() - ts));
-    if (restante > 0) setCooldownRestante(Math.ceil(restante / 1000));
+    try {
+      const ts = Number(localStorage.getItem(STORAGE_KEY)) || 0;
+      const restante = Math.max(0, COOLDOWN_MS - (Date.now() - ts));
+      if (restante > 0) setCooldownRestante(Math.ceil(restante / 1000));
+    } catch { /* storage indisponível (Safari incógnito) */ }
   }, []);
 
   useEffect(() => {
@@ -53,17 +55,16 @@ export default function Dashboard() {
     };
   }, [pollandoAtualizacao, queryClient]);
 
-  async function handleAtualizarTodos() {
+  function handleAtualizarTodos() {
     if (atualizandoTodos || cooldownRestante > 0) return;
-    setAtualizandoTodos(true);
-    try {
+    iniciarTransicao(async () => {
       await atualizarTodos();
-      localStorage.setItem(STORAGE_KEY, String(Date.now()));
+      try {
+        localStorage.setItem(STORAGE_KEY, String(Date.now()));
+      } catch { /* storage indisponível */ }
       setCooldownRestante(Math.ceil(COOLDOWN_MS / 1000));
       setPollandoAtualizacao(true);
-    } finally {
-      setAtualizandoTodos(false);
-    }
+    });
   }
 
   useEffect(() => {
@@ -90,7 +91,7 @@ export default function Dashboard() {
         )
       : [...produtos];
 
-    return lista.sort((a, b) => {
+    return lista.toSorted((a, b) => {
       // Pausados sempre no fundo
       if (a.ativo !== b.ativo) return a.ativo ? -1 : 1;
 
@@ -117,12 +118,17 @@ export default function Dashboard() {
     });
   }, [busca, produtos]);
 
-  const ativos = produtos.filter((p) => p.ativo);
-  const lojas = new Set(produtos.map((p) => p.loja).filter(Boolean));
-  const economia = produtos.reduce(
-    (acc, p) =>
-      acc + Math.max(0, (p.precoAnterior ?? p.precoAtual ?? 0) - (p.precoAtual ?? 0)),
-    0,
+  const { ativos, lojas, economia } = useMemo(
+    () => ({
+      ativos: produtos.filter((p) => p.ativo),
+      lojas: new Set(produtos.flatMap((p) => (p.loja ? [p.loja] : []))),
+      economia: produtos.reduce(
+        (acc, p) =>
+          acc + Math.max(0, (p.precoAnterior ?? p.precoAtual ?? 0) - (p.precoAtual ?? 0)),
+        0,
+      ),
+    }),
+    [produtos],
   );
 
   if (carregandoAuth || (!usuario && !carregandoAuth)) {

@@ -65,14 +65,19 @@ export default function Configuracoes() {
       let tentativas = 0;
       pollingRef.current = setInterval(async () => {
         tentativas++;
-        await queryClient.invalidateQueries({ queryKey: ["perfil"] });
-        const atualizado = queryClient.getQueryData<typeof perfil>(["perfil"]);
-        if (atualizado?.telegramId || tentativas >= 30) {
-          clearInterval(pollingRef.current!);
-          pollingRef.current = null;
-          setConectando(false);
-          if (atualizado?.telegramId) toast.success("Telegram conectado!");
-        }
+        try {
+          const atualizado = await queryClient.fetchQuery({
+            queryKey: ["perfil"],
+            queryFn: obterPerfil,
+            staleTime: 0,
+          });
+          if (atualizado?.telegramId || tentativas >= 30) {
+            clearInterval(pollingRef.current!);
+            pollingRef.current = null;
+            setConectando(false);
+            if (atualizado?.telegramId) toast.success("Telegram conectado!");
+          }
+        } catch { /* ignora erros de rede durante polling */ }
       }, 2000);
     } catch {
       toast.error("Não foi possível gerar o link. Tente novamente.");
@@ -87,6 +92,29 @@ export default function Configuracoes() {
       toast.success("Telegram desconectado.");
     } catch {
       toast.error("Não foi possível desconectar.");
+    }
+  }
+
+  async function handleTestarTelegram() {
+    setTestando(true);
+    try {
+      await testarTelegram();
+      toast.success("Mensagem de teste enviada!");
+      iniciarCooldown(180);
+    } catch {
+      toast.error("Falha ao enviar. Tente reconectar.");
+    } finally {
+      setTestando(false);
+    }
+  }
+
+  async function handleAtivarModoSilencioso() {
+    try {
+      await atualizarPreferencias({ notifTelegram: false });
+      await queryClient.invalidateQueries({ queryKey: ["perfil"] });
+      toast.success("Modo silencioso ativado.");
+    } catch {
+      toast.error("Não foi possível salvar.");
     }
   }
 
@@ -192,18 +220,7 @@ export default function Configuracoes() {
                     <button
                       type="button"
                       disabled={testando || cooldown > 0}
-                      onClick={async () => {
-                        setTestando(true);
-                        try {
-                          await testarTelegram();
-                          toast.success("Mensagem de teste enviada!");
-                          iniciarCooldown(180);
-                        } catch {
-                          toast.error("Falha ao enviar. Tente reconectar.");
-                        } finally {
-                          setTestando(false);
-                        }
-                      }}
+                      onClick={handleTestarTelegram}
                       className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-3 py-1.5 text-sm hover:bg-card disabled:opacity-60 transition-colors"
                     >
                       {testando ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
@@ -233,15 +250,7 @@ export default function Configuracoes() {
           </div>
           <button
             type="button"
-            onClick={async () => {
-              try {
-                await atualizarPreferencias({ notifTelegram: false });
-                await queryClient.invalidateQueries({ queryKey: ["perfil"] });
-                toast.success("Modo silencioso ativado.");
-              } catch {
-                toast.error("Não foi possível salvar.");
-              }
-            }}
+            onClick={handleAtivarModoSilencioso}
             className="rounded-full border border-border bg-background px-4 py-2 text-sm hover:bg-card"
           >
             Ativar

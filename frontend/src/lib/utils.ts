@@ -11,5 +11,9 @@ export function formatarBRL(valor: number): string {
 
 export function ehPrecoHistoricoLista(precoAtual: number, historico: number[]): boolean {
   if (!historico.length) return false;
-  return precoAtual <= Math.min(...historico) + 0.01;
+  let minHistorico = historico[0];
+  for (let i = 1; i < historico.length; i++) {
+    if (historico[i] < minHistorico) minHistorico = historico[i];
+  }
+  return precoAtual <= minHistorico + 0.01;
 }
