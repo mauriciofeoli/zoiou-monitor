@@ -13,6 +13,7 @@ class Configuracoes(BaseSettings):
     backend_url: str = "http://localhost:8000"
     resend_api_key: str = ""
     frontend_url: str = "http://localhost:3000"
+    frontend_urls_extras: str = ""  # origens adicionais separadas por vírgula
     ambiente: str = "development"
 
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
