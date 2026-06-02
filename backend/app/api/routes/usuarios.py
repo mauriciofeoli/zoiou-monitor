@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from supabase import AsyncClient
 
 from app.api.deps import obter_cliente_rls, obter_usuario_autenticado
@@ -121,24 +121,3 @@ async def iniciar_conexao_telegram(
     token = await gerar_token_conexao(db, usuario["id"])
     return {"url": f"https://t.me/{username}?start={token}"}
 
-
-@router.post("/me/push/subscription", status_code=status.HTTP_200_OK)
-async def salvar_push_subscription(
-    request: Request,
-    usuario: dict = Depends(obter_usuario_autenticado),
-    db: AsyncClient = Depends(obter_cliente_rls),
-) -> dict[str, str]:
-    """Salva a subscription de push notification do usuário."""
-    subscription = await request.json()
-    await db.table("usuarios").update({"push_subscription": subscription}).eq("id", usuario["id"]).execute()
-    return {"status": "salvo"}
-
-
-@router.delete("/me/push/subscription", status_code=status.HTTP_200_OK)
-async def remover_push_subscription(
-    usuario: dict = Depends(obter_usuario_autenticado),
-    db: AsyncClient = Depends(obter_cliente_rls),
-) -> dict[str, str]:
-    """Remove a subscription de push notification do usuário."""
-    await db.table("usuarios").update({"push_subscription": None}).eq("id", usuario["id"]).execute()
-    return {"status": "removido"}

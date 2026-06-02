@@ -157,17 +157,6 @@ export async function atualizarPreferencias(prefs: PreferenciasUpdate): Promise<
   return mapearUsuario(dado);
 }
 
-export async function salvarPushSubscription(subscription: PushSubscription): Promise<void> {
-  await post<unknown>("/api/usuarios/me/push/subscription", subscription.toJSON());
-}
-
-export async function removerPushSubscription(): Promise<void> {
-  const token = await tokenAtual();
-  await fetch(`${API_URL}/api/usuarios/me/push/subscription`, {
-    method: "DELETE",
-    headers: { Authorization: `Bearer ${token}` },
-  });
-}
 
 export async function testarTelegram(): Promise<void> {
   await post<unknown>("/api/usuarios/me/telegram/testar", {});

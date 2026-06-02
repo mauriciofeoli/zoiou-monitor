@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Bell, BellOff, CheckCircle2, Loader2, Send, Unlink } from "lucide-react";
+import { CheckCircle2, Loader2, Send, Unlink } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -11,22 +11,8 @@ import {
   atualizarPreferencias,
   iniciarConexaoTelegram,
   obterPerfil,
-  removerPushSubscription,
-  salvarPushSubscription,
   testarTelegram,
 } from "@/lib/api";
-
-const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? "";
-
-function urlBase64ToUint8Array(base64: string): ArrayBuffer {
-  const padding = "=".repeat((4 - (base64.length % 4)) % 4);
-  const b64 = (base64 + padding).replace(/-/g, "+").replace(/_/g, "/");
-  const raw = atob(b64);
-  const buf = new ArrayBuffer(raw.length);
-  const view = new Uint8Array(buf);
-  for (let i = 0; i < raw.length; i++) view[i] = raw.charCodeAt(i);
-  return buf;
-}
 
 export default function Configuracoes() {
   const { usuario, carregando: carregandoAuth } = useAuth();
@@ -36,9 +22,6 @@ export default function Configuracoes() {
 
   const [conectando, setConectando] = useState(false);
   const [testando, setTestando] = useState(false);
-  const [ativandoPush, setAtivandoPush] = useState(false);
-  const [pushAtivo, setPushAtivo] = useState(false);
-  const [pushSuportado, setPushSuportado] = useState(true);
 
   useEffect(() => {
     if (!carregandoAuth && !usuario) router.push("/login");
@@ -49,20 +32,6 @@ export default function Configuracoes() {
     queryFn: obterPerfil,
     enabled: !!usuario,
   });
-
-  // Verifica estado atual do push ao carregar
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
-      setPushSuportado(false);
-      return;
-    }
-    navigator.serviceWorker.register("/sw.js").then((reg) => {
-      reg.pushManager.getSubscription().then((sub) => {
-        setPushAtivo(!!sub);
-      });
-    });
-  }, []);
 
   useEffect(() => {
     return () => {
@@ -113,44 +82,6 @@ export default function Configuracoes() {
     }
   }
 
-  async function handleAtivarPush() {
-    setAtivandoPush(true);
-    try {
-      const permissao = await Notification.requestPermission();
-      if (permissao !== "granted") {
-        toast.error("Permissão negada. Habilite notificações nas configurações do browser.");
-        return;
-      }
-      const reg = await navigator.serviceWorker.register("/sw.js");
-      const sub = await reg.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
-      });
-      await salvarPushSubscription(sub);
-      setPushAtivo(true);
-      toast.success("Notificações do site ativadas!");
-    } catch {
-      toast.error("Não foi possível ativar as notificações.");
-    } finally {
-      setAtivandoPush(false);
-    }
-  }
-
-  async function handleDesativarPush() {
-    try {
-      const reg = await navigator.serviceWorker.getRegistration("/sw.js");
-      if (reg) {
-        const sub = await reg.pushManager.getSubscription();
-        if (sub) await sub.unsubscribe();
-      }
-      await removerPushSubscription();
-      setPushAtivo(false);
-      toast.success("Notificações do site desativadas.");
-    } catch {
-      toast.error("Não foi possível desativar.");
-    }
-  }
-
   if (carregandoAuth || isLoading) {
     return (
       <div className="min-h-screen bg-background">
@@ -181,7 +112,6 @@ export default function Configuracoes() {
         </p>
 
         <div className="mt-10 space-y-3">
-          {/* Telegram */}
           <div className="rounded-2xl border border-border bg-card p-5 transition-colors">
             <div className="flex items-start gap-4">
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-secondary text-foreground">
@@ -275,60 +205,6 @@ export default function Configuracoes() {
               </div>
             </div>
           </div>
-
-          {/* Push do browser */}
-          <div className={["rounded-2xl border border-border bg-card p-5 transition-colors", !pushSuportado ? "opacity-50" : ""].join(" ")}>
-            <div className="flex items-start gap-4">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-secondary text-foreground">
-                {pushAtivo ? <Bell className="h-5 w-5" /> : <BellOff className="h-5 w-5" />}
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between gap-4">
-                  <div className="flex items-center gap-2">
-                    <h3 className="font-serif text-xl text-ink">Notificações do site</h3>
-                    {pushAtivo && (
-                      <span className="flex items-center gap-1 rounded-full bg-success/10 px-2 py-0.5 text-xs text-success">
-                        <CheckCircle2 className="h-3 w-3" />
-                        Ativo
-                      </span>
-                    )}
-                    {!pushSuportado && (
-                      <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
-                        não suportado
-                      </span>
-                    )}
-                  </div>
-                </div>
-
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Alertas direto no browser, mesmo com o site fechado.
-                </p>
-
-                {pushSuportado && !pushAtivo && (
-                  <button
-                    type="button"
-                    disabled={ativandoPush}
-                    onClick={handleAtivarPush}
-                    className="mt-3 inline-flex items-center gap-2 rounded-full bg-foreground px-4 py-2 text-sm font-medium text-background hover:bg-foreground/90 disabled:opacity-60 transition-colors"
-                  >
-                    {ativandoPush ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-                    {ativandoPush ? "Ativando..." : "Ativar notificações"}
-                  </button>
-                )}
-
-                {pushSuportado && pushAtivo && (
-                  <button
-                    type="button"
-                    onClick={handleDesativarPush}
-                    className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-3 py-1.5 text-sm text-muted-foreground hover:bg-card hover:text-foreground transition-colors"
-                  >
-                    <BellOff className="h-3.5 w-3.5" />
-                    Desativar
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
         </div>
 
         <div className="mt-8 flex items-center justify-between rounded-2xl bg-secondary p-5">
@@ -344,7 +220,6 @@ export default function Configuracoes() {
               try {
                 await atualizarPreferencias({ notifTelegram: false });
                 await queryClient.invalidateQueries({ queryKey: ["perfil"] });
-                if (pushAtivo) await handleDesativarPush();
                 toast.success("Modo silencioso ativado.");
               } catch {
                 toast.error("Não foi possível salvar.");
