@@ -148,8 +148,6 @@ cd frontend && npx tsc --noEmit
 
 ---
 
----
-
 ## Licença
 
 MIT © [Mauricio Feoli](https://github.com/mauriciofeoli)
