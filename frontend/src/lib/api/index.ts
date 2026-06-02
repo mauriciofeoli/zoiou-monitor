@@ -37,7 +37,7 @@ async function post<T>(path: string, body: unknown): Promise<T> {
   });
   if (!res.ok) {
     const b = await res.json().catch(() => ({}));
-    throw new Error(b?.error?.message ?? `Erro ${res.status}`);
+    throw new Error(b?.detail ?? b?.error?.message ?? `Erro ${res.status}`);
   }
   return res.json();
 }
@@ -51,7 +51,7 @@ async function patch<T>(path: string, body: unknown): Promise<T> {
   });
   if (!res.ok) {
     const b = await res.json().catch(() => ({}));
-    throw new Error(b?.error?.message ?? `Erro ${res.status}`);
+    throw new Error(b?.detail ?? b?.error?.message ?? `Erro ${res.status}`);
   }
   return res.json();
 }
@@ -64,7 +64,7 @@ async function del(path: string): Promise<void> {
   });
   if (!res.ok && res.status !== 204) {
     const b = await res.json().catch(() => ({}));
-    throw new Error(b?.error?.message ?? `Erro ${res.status}`);
+    throw new Error(b?.detail ?? b?.error?.message ?? `Erro ${res.status}`);
   }
 }
 

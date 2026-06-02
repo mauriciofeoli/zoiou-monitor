@@ -144,6 +144,13 @@ async def adicionar_produto(
     url = str(payload.url)
     db_s = await _db_direto()
 
+    total = await db.table("lista_desejos").select("id", count="exact").eq("usuario_id", usuario["id"]).execute()
+    if (total.count or 0) >= 20:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Limite de 20 produtos atingido.",
+        )
+
     existente = await db_s.table("produtos").select("id, nome, url, loja, imagem").eq("url", url).limit(1).execute()
 
     if existente.data:
