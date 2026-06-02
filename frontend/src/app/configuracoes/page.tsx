@@ -198,7 +198,7 @@ export default function Configuracoes() {
                         try {
                           await testarTelegram();
                           toast.success("Mensagem de teste enviada!");
-                          iniciarCooldown(60);
+                          iniciarCooldown(180);
                         } catch {
                           toast.error("Falha ao enviar. Tente reconectar.");
                         } finally {
