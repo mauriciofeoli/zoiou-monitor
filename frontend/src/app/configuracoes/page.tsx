@@ -153,7 +153,7 @@ export default function Configuracoes() {
                       onClick={() => handleToggleTelegram(!perfil?.notifTelegram)}
                       className={[
                         "relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full transition-colors",
-                        perfil?.notifTelegram ? "bg-success" : "bg-muted",
+                        perfil?.notifTelegram ? "bg-success" : "bg-foreground/25",
                       ].join(" ")}
                     >
                       <span
