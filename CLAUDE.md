@@ -155,16 +155,11 @@ docs/
   api-reference.md      todos os endpoints com request/response
   database-schema.md    tabelas, colunas, RLS policies
   deployment.md         Railway + Vercel + Supabase + domínio customizado
-  local-development.md  setup detalhado para contribuidores
+  local-development.md  setup detalhado para dev local
 
 .github/
-  workflows/ci.yml                pytest + ruff + tsc + eslint em todo PR
-  ISSUE_TEMPLATE/bug_report.md
-  ISSUE_TEMPLATE/feature_request.md
-  PULL_REQUEST_TEMPLATE.md
+  workflows/ci.yml                pytest + ruff + tsc + eslint em todo push
 
-CONTRIBUTING.md         workflow de branches, setup local, conventional commits
-SECURITY.md             política de divulgação responsável
 LICENSE                 MIT
 ```
 
