@@ -15,7 +15,9 @@ app = FastAPI(title="Zoiou API", version="1.0.0", docs_url="/docs")
 app.add_middleware(RateLimitMiddleware)
 
 _origens_dev = ["http://localhost:3000", "http://localhost:3001"]
-_origens = _origens_dev if configuracoes.ambiente == "development" else [configuracoes.frontend_url]
+_extras = [u.strip() for u in configuracoes.frontend_urls_extras.split(",") if u.strip()]
+_origens_prod = [u for u in [configuracoes.frontend_url, *_extras] if u and not u.startswith("http://localhost")]
+_origens = [*_origens_dev, *_origens_prod] if configuracoes.ambiente == "development" else _origens_prod or _origens_dev
 
 app.add_middleware(
     CORSMiddleware,
