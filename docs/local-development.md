@@ -159,12 +159,10 @@ zoiou/
 │       └── types/index.ts
 │
 ├── docs/                       # documentação técnica
-├── .github/                    # CI e templates
+├── .github/                    # CI
 ├── CLAUDE.md                   # mapa para agentes de IA
 ├── BUSINESS_RULES.md
 ├── DESIGN_SYSTEM.md
-├── CONTRIBUTING.md
-├── SECURITY.md
 └── LICENSE
 ```
 
@@ -172,4 +170,4 @@ zoiou/
 
 ## Dúvidas?
 
-Abra uma [issue](https://github.com/mauriciofeoli/zoiou-monitor/issues) descrevendo o problema.
+Entre em contato pelo email feoli.maa@gmail.com.
