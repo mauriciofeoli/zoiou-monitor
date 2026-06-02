@@ -132,7 +132,6 @@ Veja o guia completo em **[docs/deployment.md](docs/deployment.md)**.
 | [docs/database-schema.md](docs/database-schema.md) | Tabelas, colunas, RLS policies |
 | [docs/deployment.md](docs/deployment.md) | Railway, Vercel, Supabase, domínio customizado |
 | [docs/local-development.md](docs/local-development.md) | Setup local passo a passo |
-| [CONTRIBUTING.md](CONTRIBUTING.md) | Como contribuir |
 | [CLAUDE.md](CLAUDE.md) | Mapa do repositório para agentes de IA |
 
 ---
@@ -148,12 +147,6 @@ cd frontend && npx tsc --noEmit
 ```
 
 ---
-
-## Contribuindo
-
-Contribuições são bem-vindas! Leia [CONTRIBUTING.md](CONTRIBUTING.md) para o workflow completo.
-
-Para reportar vulnerabilidades de segurança, veja [SECURITY.md](SECURITY.md).
 
 ---
 
