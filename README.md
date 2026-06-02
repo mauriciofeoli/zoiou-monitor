@@ -1,19 +1,25 @@
 # zoiou. — seu olho nos preços
 
-Monitor de preços pessoal. Cole a URL de um produto de qualquer loja online, o Zoiou monitora o preço todo dia e te avisa quando muda — com alerta especial quando bate o menor preço dos últimos 12 meses.
+[![CI](https://github.com/mauriciofeoli/zoiou-monitor/actions/workflows/ci.yml/badge.svg)](https://github.com/mauriciofeoli/zoiou-monitor/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![Python 3.12](https://img.shields.io/badge/Python-3.12-blue.svg)](https://python.org)
+[![Next.js 15](https://img.shields.io/badge/Next.js-15-black.svg)](https://nextjs.org)
 
-**zoiou.com.br** · gratuito · sem anúncios · sem afiliados
+Monitor de preços pessoal. Cole a URL de qualquer produto, o Zoiou acompanha o preço todo dia e te avisa pelo **Telegram** quando muda — com destaque especial quando bate o menor preço dos últimos 12 meses.
+
+**[zoiou.com](https://www.zoiou.com)** · gratuito · sem anúncios · sem afiliados
 
 ---
 
 ## Funcionalidades
 
-- Monitora qualquer loja brasileira (Kabum, Pichau, Terabyte, Amazon BR, etc.)
-- Notificação por **Telegram** quando o preço muda (WhatsApp em breve)
-- Badge de **🏆 Preço histórico** quando algo bate o mínimo dos últimos 12 meses
-- Dashboard com histórico de preços em gráfico de área
-- Ativar / pausar monitoramento por produto
-- Dark mode
+- **Monitora qualquer loja brasileira** — Kabum, Pichau, Terabyte, Amazon BR, Mercado Livre e mais
+- **Notificação por Telegram** quando o preço sobe ou cai
+- **Badge 🏆 Preço histórico** quando o produto bate o menor preço dos últimos 12 meses
+- **Gráfico de histórico** com área + linha de mínimo histórico
+- **Ativar / pausar** monitoramento por produto
+- **Dark mode** nativo
+- **Rate limiting** e **RLS** — dados de cada usuário isolados no banco
 
 ---
 
@@ -21,86 +27,136 @@ Monitor de preços pessoal. Cole a URL de um produto de qualquer loja online, o 
 
 | Camada | Tecnologia |
 |--------|-----------|
-| Backend | FastAPI 0.111 + Python 3.12 |
-| Frontend | Next.js 15 + React 19 + Tailwind v4 |
-| Banco | Supabase (PostgreSQL + Auth + RLS) |
-| Scraping | curl_cffi (primário) + Playwright (fallback) |
-| Notificações | Telegram Bot API · WhatsApp (em breve) |
-| Deploy backend | Railway |
-| Deploy frontend | Vercel |
+| Backend | [FastAPI](https://fastapi.tiangolo.com) 0.111 + Python 3.12 |
+| Frontend | [Next.js](https://nextjs.org) 15 + [React](https://react.dev) 19 + [Tailwind](https://tailwindcss.com) v4 |
+| Banco | [Supabase](https://supabase.com) — PostgreSQL + Auth + RLS |
+| Scraping | [curl_cffi](https://github.com/lexiforest/curl_cffi) (primário) → [Playwright](https://playwright.dev) (fallback) |
+| Notificações | [Telegram Bot API](https://core.telegram.org/bots/api) · WhatsApp (em breve) |
+| Deploy backend | [Railway](https://railway.app) |
+| Deploy frontend | [Vercel](https://vercel.com) |
 
 ---
 
-## Rodar localmente
+## Quickstart
+
+### Pré-requisitos
+- Python 3.12+, Node.js 20+, [Bun](https://bun.sh)
+- Conta no [Supabase](https://supabase.com) (gratuito)
 
 ### Backend
 
 ```bash
 cd backend
-cp .env.example .env        # preencher as variáveis
+cp .env.example .env       # preencha com suas credenciais Supabase
 pip install -r requirements.txt
 uvicorn app.main:app --reload
-# → http://localhost:8000
+# → http://localhost:8000/docs
 ```
 
 ### Frontend
 
 ```bash
 cd frontend
-cp .env.local.example .env.local   # preencher as variáveis
+cp .env.local.example .env.local   # preencha SUPABASE_URL e SUPABASE_ANON_KEY
 bun install
 bun run dev
 # → http://localhost:3000
 ```
 
-### Variáveis necessárias
-
-**`backend/.env`**
-```
-SUPABASE_URL=
-SUPABASE_SERVICE_KEY=
-SUPABASE_ANON_KEY=
-SECRET_KEY=
-TELEGRAM_BOT_TOKEN=   # opcional
-RESEND_API_KEY=        # opcional
-FRONTEND_URL=http://localhost:3000
-AMBIENTE=development
-```
-
-**`frontend/.env.local`**
-```
-NEXT_PUBLIC_API_URL=http://localhost:8000
-NEXT_PUBLIC_SUPABASE_URL=
-NEXT_PUBLIC_SUPABASE_ANON_KEY=
-```
+Veja o guia completo em **[docs/local-development.md](docs/local-development.md)**.
 
 ---
 
-## Estrutura
+## Variáveis de ambiente
+
+### Backend (`backend/.env`)
+
+| Variável | Obrigatória | Descrição |
+|---------|------------|-----------|
+| `SUPABASE_URL` | ✅ | URL do projeto Supabase |
+| `SUPABASE_SERVICE_KEY` | ✅ | Chave de serviço (bypassa RLS) |
+| `SUPABASE_ANON_KEY` | ✅ | Chave anon pública |
+| `SECRET_KEY` | ✅ | String aleatória — `openssl rand -hex 32` |
+| `FRONTEND_URL` | ✅ | URL do frontend (CORS) |
+| `AMBIENTE` | ✅ | `development` ou `production` |
+| `TELEGRAM_BOT_TOKEN` | — | Token do bot Telegram |
+
+### Frontend (`frontend/.env.local`)
+
+| Variável | Descrição |
+|---------|-----------|
+| `NEXT_PUBLIC_API_URL` | URL do backend |
+| `NEXT_PUBLIC_SUPABASE_URL` | URL do Supabase |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Chave anon |
+
+---
+
+## Arquitetura
 
 ```
-zoiou/
-├── backend/
-│   ├── app/
-│   │   ├── api/routes/     # produtos, historico, usuarios
-│   │   ├── core/           # config, database, limiter, security
-│   │   ├── schemas/        # pydantic models
-│   │   ├── services/       # scraper, historico, notificacao, telegram
-│   │   └── scheduler/      # jobs.py — cron 03:00 BRT
-│   └── tests/
-├── frontend/
-│   └── src/
-│       ├── app/            # Next.js App Router (page.tsx, login, produtos, configuracoes)
-│       ├── components/     # CardProduto, Header, GraficoHistorico, ZoiouWordmark...
-│       ├── hooks/          # use-auth.tsx
-│       ├── lib/            # api/index.ts, supabase.ts, utils.ts
-│       └── types/          # index.ts
-├── README.md               # este arquivo
-└── CLAUDE.md               # contexto e instruções para agentes de IA
+Browser (Next.js/Vercel)
+        │ JWT
+        ▼
+  FastAPI (Railway)
+  ├── Rate limiter
+  ├── CORS middleware
+  └── Auth (Supabase JWT)
+        │
+   ┌────┴────┐
+   │         │
+Supabase   Scraper
+   DB    curl_cffi → Playwright
+            │
+      Telegram Bot API
 ```
+
+O ponto mais crítico é o uso de **dois clientes Supabase** distintos no backend — service key para tabelas compartilhadas, RLS client para dados do usuário. Leia [docs/architecture.md](docs/architecture.md).
+
+---
+
+## Deploy
+
+[![Deploy on Railway](https://railway.com/button.svg)](https://railway.com)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com)
+
+Veja o guia completo em **[docs/deployment.md](docs/deployment.md)**.
 
 ---
 
 ## Documentação
 
-- **`CLAUDE.md`** — mapa completo do repositório: stack, arquivos-chave, padrões de código, fluxo de notificação, endpoints e design system
+| Documento | Conteúdo |
+|-----------|----------|
+| [docs/architecture.md](docs/architecture.md) | Diagrama, dois clientes Supabase, fluxo de notificação |
+| [docs/api-reference.md](docs/api-reference.md) | Todos os endpoints com request/response |
+| [docs/database-schema.md](docs/database-schema.md) | Tabelas, colunas, RLS policies |
+| [docs/deployment.md](docs/deployment.md) | Railway, Vercel, Supabase, domínio customizado |
+| [docs/local-development.md](docs/local-development.md) | Setup local passo a passo |
+| [CONTRIBUTING.md](CONTRIBUTING.md) | Como contribuir |
+| [CLAUDE.md](CLAUDE.md) | Mapa do repositório para agentes de IA |
+
+---
+
+## Rodando os testes
+
+```bash
+# Backend
+cd backend && pytest tests/ -v
+
+# Frontend
+cd frontend && npx tsc --noEmit
+```
+
+---
+
+## Contribuindo
+
+Contribuições são bem-vindas! Leia [CONTRIBUTING.md](CONTRIBUTING.md) para o workflow completo.
+
+Para reportar vulnerabilidades de segurança, veja [SECURITY.md](SECURITY.md).
+
+---
+
+## Licença
+
+MIT © [Mauricio Feoli](https://github.com/mauriciofeoli)

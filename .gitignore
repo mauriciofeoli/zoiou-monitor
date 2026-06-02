@@ -29,3 +29,6 @@ Thumbs.db
 
 # Zip de referência
 *.zip
+
+# MCP (contém tokens de acesso)
+.mcp.json
