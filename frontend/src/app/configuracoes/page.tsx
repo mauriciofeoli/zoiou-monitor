@@ -121,11 +121,10 @@ export default function Configuracoes() {
           Preferências
         </p>
         <h1 className="font-serif text-5xl text-ink leading-tight">
-          Como você quer ser avisado?
+          Alertas de preço
         </h1>
         <p className="mt-3 text-muted-foreground max-w-xl">
-          Sem spam. A gente só te avisa quando o preço realmente muda — ou quando algo bate o
-          mínimo histórico dos últimos 12 meses.
+          Conecte seu Telegram e receba uma mensagem quando o preço mudar ou bater o mínimo histórico.
         </p>
 
         <div className="mt-10 space-y-3">
