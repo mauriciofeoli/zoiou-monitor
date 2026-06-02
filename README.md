@@ -1,11 +1,11 @@
-# zoiou. — seu olho nos preços
+# zoiou. - seu olho nos preços
 
 [![CI](https://github.com/mauriciofeoli/zoiou-monitor/actions/workflows/ci.yml/badge.svg)](https://github.com/mauriciofeoli/zoiou-monitor/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Python 3.12](https://img.shields.io/badge/Python-3.12-blue.svg)](https://python.org)
 [![Next.js 15](https://img.shields.io/badge/Next.js-15-black.svg)](https://nextjs.org)
 
-Monitor de preços pessoal. Cole a URL de qualquer produto, o Zoiou acompanha o preço todo dia e te avisa pelo **Telegram** quando muda — com destaque especial quando bate o menor preço dos últimos 12 meses.
+Monitor de preços pessoal. Cole a URL de qualquer produto, o Zoiou acompanha o preço todo dia e te avisa pelo **Telegram** quando muda - com destaque especial quando bate o menor preço dos últimos 12 meses.
 
 **[zoiou.com](https://www.zoiou.com)** · gratuito · sem anúncios · sem afiliados
 
@@ -13,13 +13,13 @@ Monitor de preços pessoal. Cole a URL de qualquer produto, o Zoiou acompanha o 
 
 ## Funcionalidades
 
-- **Monitora qualquer loja brasileira** — Kabum, Pichau, Terabyte, Amazon BR, Mercado Livre e mais
+- **Monitora qualquer loja brasileira** - Kabum, Pichau, Terabyte, Amazon BR, Mercado Livre e mais
 - **Notificação por Telegram** quando o preço sobe ou cai
 - **Badge 🏆 Preço histórico** quando o produto bate o menor preço dos últimos 12 meses
 - **Gráfico de histórico** com área + linha de mínimo histórico
 - **Ativar / pausar** monitoramento por produto
 - **Dark mode** nativo
-- **Rate limiting** e **RLS** — dados de cada usuário isolados no banco
+- **Rate limiting** e **RLS** - dados de cada usuário isolados no banco
 
 ---
 
@@ -29,7 +29,7 @@ Monitor de preços pessoal. Cole a URL de qualquer produto, o Zoiou acompanha o 
 |--------|-----------|
 | Backend | [FastAPI](https://fastapi.tiangolo.com) 0.111 + Python 3.12 |
 | Frontend | [Next.js](https://nextjs.org) 15 + [React](https://react.dev) 19 + [Tailwind](https://tailwindcss.com) v4 |
-| Banco | [Supabase](https://supabase.com) — PostgreSQL + Auth + RLS |
+| Banco | [Supabase](https://supabase.com) - PostgreSQL + Auth + RLS |
 | Scraping | [curl_cffi](https://github.com/lexiforest/curl_cffi) (primário) → [Playwright](https://playwright.dev) (fallback) |
 | Notificações | [Telegram Bot API](https://core.telegram.org/bots/api) · WhatsApp (em breve) |
 | Deploy backend | [Railway](https://railway.app) |
@@ -76,10 +76,10 @@ Veja o guia completo em **[docs/local-development.md](docs/local-development.md)
 | `SUPABASE_URL` | ✅ | URL do projeto Supabase |
 | `SUPABASE_SERVICE_KEY` | ✅ | Chave de serviço (bypassa RLS) |
 | `SUPABASE_ANON_KEY` | ✅ | Chave anon pública |
-| `SECRET_KEY` | ✅ | String aleatória — `openssl rand -hex 32` |
+| `SECRET_KEY` | ✅ | String aleatória - `openssl rand -hex 32` |
 | `FRONTEND_URL` | ✅ | URL do frontend (CORS) |
 | `AMBIENTE` | ✅ | `development` ou `production` |
-| `TELEGRAM_BOT_TOKEN` | — | Token do bot Telegram |
+| `TELEGRAM_BOT_TOKEN` | - | Token do bot Telegram |
 
 ### Frontend (`frontend/.env.local`)
 
@@ -110,7 +110,7 @@ Supabase   Scraper
       Telegram Bot API
 ```
 
-O ponto mais crítico é o uso de **dois clientes Supabase** distintos no backend — service key para tabelas compartilhadas, RLS client para dados do usuário. Leia [docs/architecture.md](docs/architecture.md).
+O ponto mais crítico é o uso de **dois clientes Supabase** distintos no backend - service key para tabelas compartilhadas, RLS client para dados do usuário. Leia [docs/architecture.md](docs/architecture.md).
 
 ---
 

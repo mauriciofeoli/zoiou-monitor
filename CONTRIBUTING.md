@@ -52,12 +52,12 @@ bun run dev
 | Variável | Descrição |
 |---------|-----------|
 | `SUPABASE_URL` | URL do seu projeto Supabase |
-| `SUPABASE_SERVICE_KEY` | Chave de serviço (bypassa RLS) — em Project Settings → API |
-| `SUPABASE_ANON_KEY` | Chave anon pública — em Project Settings → API |
-| `SECRET_KEY` | String aleatória — gere com `openssl rand -hex 32` |
+| `SUPABASE_SERVICE_KEY` | Chave de serviço (bypassa RLS) - em Project Settings → API |
+| `SUPABASE_ANON_KEY` | Chave anon pública - em Project Settings → API |
+| `SECRET_KEY` | String aleatória - gere com `openssl rand -hex 32` |
 | `FRONTEND_URL` | `http://localhost:3000` para dev |
 | `AMBIENTE` | `development` |
-| `TELEGRAM_BOT_TOKEN` | Opcional — crie um bot com @BotFather |
+| `TELEGRAM_BOT_TOKEN` | Opcional - crie um bot com @BotFather |
 
 **`frontend/.env.local`**:
 

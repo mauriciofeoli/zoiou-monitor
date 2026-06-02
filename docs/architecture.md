@@ -35,7 +35,7 @@ Este é o padrão mais crítico da arquitetura. O backend usa **dois clientes Su
 
 | Cliente | Como obter | Quando usar |
 |---------|-----------|------------|
-| **Service key** | `await _db_direto()` em `database.py` | Leitura/escrita em `produtos` e `historico_precos`. Bypassa RLS — necessário porque essas tabelas são compartilhadas entre usuários. **Obrigatório em `despachar_notificacoes`** |
+| **Service key** | `await _db_direto()` em `database.py` | Leitura/escrita em `produtos` e `historico_precos`. Bypassa RLS - necessário porque essas tabelas são compartilhadas entre usuários. **Obrigatório em `despachar_notificacoes`** |
 | **RLS client** | `Depends(obter_cliente_rls)` em `deps.py` | Leitura/escrita em `lista_desejos` e `usuarios`. O banco valida `auth.uid() = usuario_id` automaticamente |
 
 > **Regra crítica:** Nunca passe o cliente RLS para `despachar_notificacoes`. A query em `lista_desejos` retornaria apenas o usuário atual, não todos que monitoram o produto.
@@ -62,8 +62,8 @@ Scheduler (cron 03:00 BRT)
 
 O scraper usa dois paths em cascata:
 
-1. **curl_cffi** (primário, síncrono) — emula fingerprint de browser, mais rápido
-2. **Playwright** (fallback, assíncrono em background) — headless Chromium, para páginas que exigem JS
+1. **curl_cffi** (primário, síncrono) - emula fingerprint de browser, mais rápido
+2. **Playwright** (fallback, assíncrono em background) - headless Chromium, para páginas que exigem JS
 
 O fallback é acionado quando curl_cffi retorna preço `None`.
 
@@ -79,4 +79,4 @@ Implementado como middleware Starlette (`backend/app/core/limiter.py`):
 
 ## Autenticação
 
-O frontend usa Supabase Auth diretamente. O JWT gerado pelo Supabase é enviado no header `Authorization: Bearer <token>` para o backend. O backend valida o token com `supabase.auth.get_user(token)` — sem segredo compartilhado, sem revalidação manual de claims.
+O frontend usa Supabase Auth diretamente. O JWT gerado pelo Supabase é enviado no header `Authorization: Bearer <token>` para o backend. O backend valida o token com `supabase.auth.get_user(token)` - sem segredo compartilhado, sem revalidação manual de claims.

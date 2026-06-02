@@ -52,11 +52,11 @@ Adiciona um produto à lista de desejos. Se a URL já existir no sistema (outro 
 
 **Limite:** 10 requisições/minuto por IP · 20 produtos por usuário
 
-**Response 201** — produto criado  
-**Response 200** — produto já existia, adicionado à lista  
-**Response 409** — usuário já tem esse produto na lista  
-**Response 422** — URL inválida  
-**Response 429** — rate limit excedido
+**Response 201** - produto criado  
+**Response 200** - produto já existia, adicionado à lista  
+**Response 409** - usuário já tem esse produto na lista  
+**Response 422** - URL inválida  
+**Response 429** - rate limit excedido
 
 ---
 
@@ -68,8 +68,8 @@ DELETE /api/produtos/{id}
 
 Remove o produto da lista de desejos do usuário. Não deleta o produto global nem o histórico de preços.
 
-**Response 204** — removido  
-**Response 404** — produto não encontrado na lista do usuário
+**Response 204** - removido  
+**Response 404** - produto não encontrado na lista do usuário
 
 ---
 
@@ -82,7 +82,7 @@ Content-Type: application/json
 { "ativo": false }
 ```
 
-**Response 200** — produto atualizado
+**Response 200** - produto atualizado
 
 ---
 
@@ -96,8 +96,8 @@ Dispara scraping imediato e retorna o produto com preço atualizado.
 
 **Limite:** 6 requisições/minuto por IP
 
-**Response 200** — produto com preço atualizado  
-**Response 503** — scraping falhou (preço não encontrado)
+**Response 200** - produto com preço atualizado  
+**Response 503** - scraping falhou (preço não encontrado)
 
 ---
 
@@ -176,7 +176,7 @@ Content-Type: application/json
 
 Todos os campos são opcionais. Envie apenas o que deseja alterar.
 
-**Response 200** — preferências atualizadas
+**Response 200** - preferências atualizadas
 
 ---
 
@@ -203,8 +203,8 @@ POST /api/usuarios/me/telegram/testar
 
 Envia uma mensagem de teste para o Telegram do usuário.
 
-**Response 204** — mensagem enviada  
-**Response 400** — Telegram não configurado
+**Response 204** - mensagem enviada  
+**Response 400** - Telegram não configurado
 
 ---
 

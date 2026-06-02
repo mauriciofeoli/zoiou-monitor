@@ -4,7 +4,7 @@ O Zoiou usa Railway (backend) e Vercel (frontend). Ambos deployam automaticament
 
 ---
 
-## Backend — Railway
+## Backend - Railway
 
 ### Deploy em um clique
 
@@ -26,18 +26,18 @@ O Zoiou usa Railway (backend) e Vercel (frontend). Ambos deployam automaticament
 | `SUPABASE_URL` | ✅ | URL do projeto Supabase |
 | `SUPABASE_SERVICE_KEY` | ✅ | Chave de serviço (Project Settings → API) |
 | `SUPABASE_ANON_KEY` | ✅ | Chave anon pública |
-| `SECRET_KEY` | ✅ | String aleatória — `openssl rand -hex 32` |
+| `SECRET_KEY` | ✅ | String aleatória - `openssl rand -hex 32` |
 | `FRONTEND_URL` | ✅ | URL do frontend em produção (ex: `https://www.zoiou.com`) |
-| `FRONTEND_URLS_EXTRAS` | — | URLs adicionais separadas por vírgula |
+| `FRONTEND_URLS_EXTRAS` | - | URLs adicionais separadas por vírgula |
 | `AMBIENTE` | ✅ | `production` |
-| `TELEGRAM_BOT_TOKEN` | — | Token do bot (crie em @BotFather) |
-| `TELEGRAM_WEBHOOK_SECRET` | — | String aleatória para validar webhooks |
-| `BACKEND_URL` | — | URL pública do backend (para registrar webhook Telegram) |
-| `RESEND_API_KEY` | — | API key do Resend (notificações por email) |
+| `TELEGRAM_BOT_TOKEN` | - | Token do bot (crie em @BotFather) |
+| `TELEGRAM_WEBHOOK_SECRET` | - | String aleatória para validar webhooks |
+| `BACKEND_URL` | - | URL pública do backend (para registrar webhook Telegram) |
+| `RESEND_API_KEY` | - | API key do Resend (notificações por email) |
 
 ---
 
-## Frontend — Vercel
+## Frontend - Vercel
 
 ### Deploy em um clique
 
@@ -93,10 +93,10 @@ FRONTEND_URLS_EXTRAS=https://seudominio.com,https://seu-projeto.vercel.app
 
 GitHub Actions roda automaticamente em todo PR e push para `master`:
 
-- `backend-test` — pytest
-- `backend-lint` — ruff
-- `frontend-typecheck` — tsc
-- `frontend-lint` — eslint
+- `backend-test` - pytest
+- `backend-lint` - ruff
+- `frontend-typecheck` - tsc
+- `frontend-lint` - eslint
 
 Configure os secrets no GitHub em **Settings → Secrets → Actions**:
 - `SUPABASE_URL`

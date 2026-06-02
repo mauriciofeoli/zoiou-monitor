@@ -8,7 +8,7 @@ on:
 
 jobs:
   backend-test:
-    name: Backend — testes
+    name: Backend - testes
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -29,7 +29,7 @@ jobs:
           AMBIENTE: development
 
   backend-lint:
-    name: Backend — lint
+    name: Backend - lint
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -44,7 +44,7 @@ jobs:
       - run: ruff check app/
 
   frontend-typecheck:
-    name: Frontend — typecheck
+    name: Frontend - typecheck
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -60,7 +60,7 @@ jobs:
           NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder
 
   frontend-lint:
-    name: Frontend — lint
+    name: Frontend - lint
     runs-on: ubuntu-latest
     defaults:
       run:

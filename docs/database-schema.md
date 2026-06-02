@@ -6,7 +6,7 @@ Banco PostgreSQL gerenciado pelo Supabase com RLS (Row Level Security) ativo em 
 
 ### `produtos`
 
-Produto compartilhado entre usuários. URL é única — se dois usuários monitoram o mesmo produto, há apenas um registro aqui.
+Produto compartilhado entre usuários. URL é única - se dois usuários monitoram o mesmo produto, há apenas um registro aqui.
 
 | Coluna | Tipo | Descrição |
 |--------|------|-----------|
@@ -34,7 +34,7 @@ Relação N:N entre usuários e produtos. Cada linha representa um usuário moni
 | `created_at` | `timestamptz` | Data de adição |
 
 **RLS:** usuário só acessa suas próprias linhas (`auth.uid() = usuario_id`).  
-**Índice:** `(usuario_id, produto_id)` UNIQUE — impede duplicatas.
+**Índice:** `(usuario_id, produto_id)` UNIQUE - impede duplicatas.
 
 ---
 
@@ -81,10 +81,10 @@ Extensão do Supabase Auth com preferências de notificação. Criada automatica
 ## Clientes Supabase no backend
 
 ```python
-# Service key — bypassa RLS
+# Service key - bypassa RLS
 db_s = await _db_direto()   # database.py
 
-# RLS client — respeita auth.uid()
+# RLS client - respeita auth.uid()
 db: AsyncClient = Depends(obter_cliente_rls)   # deps.py
 ```
 

@@ -39,4 +39,4 @@ Out of scope:
 
 ## Hall of Thanks
 
-*No reports yet — be the first!*
+*No reports yet. Be the first!*
