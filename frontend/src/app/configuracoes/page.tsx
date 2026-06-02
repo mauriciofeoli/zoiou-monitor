@@ -22,6 +22,8 @@ export default function Configuracoes() {
 
   const [conectando, setConectando] = useState(false);
   const [testando, setTestando] = useState(false);
+  const [cooldown, setCooldown] = useState(0);
+  const cooldownRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     if (!carregandoAuth && !usuario) router.push("/login");
@@ -36,8 +38,23 @@ export default function Configuracoes() {
   useEffect(() => {
     return () => {
       if (pollingRef.current) clearInterval(pollingRef.current);
+      if (cooldownRef.current) clearInterval(cooldownRef.current);
     };
   }, []);
+
+  function iniciarCooldown(segundos = 60) {
+    setCooldown(segundos);
+    cooldownRef.current = setInterval(() => {
+      setCooldown((s) => {
+        if (s <= 1) {
+          clearInterval(cooldownRef.current!);
+          cooldownRef.current = null;
+          return 0;
+        }
+        return s - 1;
+      });
+    }, 1000);
+  }
 
   async function handleConectarTelegram() {
     setConectando(true);
@@ -175,12 +192,13 @@ export default function Configuracoes() {
                   <div className="mt-3 flex items-center gap-2">
                     <button
                       type="button"
-                      disabled={testando}
+                      disabled={testando || cooldown > 0}
                       onClick={async () => {
                         setTestando(true);
                         try {
                           await testarTelegram();
                           toast.success("Mensagem de teste enviada!");
+                          iniciarCooldown(60);
                         } catch {
                           toast.error("Falha ao enviar. Tente reconectar.");
                         } finally {
@@ -190,7 +208,7 @@ export default function Configuracoes() {
                       className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-3 py-1.5 text-sm hover:bg-card disabled:opacity-60 transition-colors"
                     >
                       {testando ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
-                      Testar
+                      {cooldown > 0 ? `Testar (${cooldown}s)` : "Testar"}
                     </button>
                     <button
                       type="button"
