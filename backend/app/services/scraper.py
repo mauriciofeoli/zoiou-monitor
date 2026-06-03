@@ -376,9 +376,66 @@ async def _buscar_html_playwright(url: str) -> str | None:
             await browser.close()
 
 
-async def extrair_preco(url: str) -> float | None:
-    """Extrai o preço de um produto. Tenta ScraperAPI (se configurado), curl_cffi, Playwright."""
+def _shopee_ids(url: str) -> tuple[str, str] | None:
+    """Extrai (shopid, itemid) do path da URL da Shopee (-i.shopid.itemid)."""
+    m = re.search(r"-i\.(\d+)\.(\d+)", urlparse(url).path)
+    return (m.group(1), m.group(2)) if m else None
+
+
+def _nome_de_slug_shopee(url: str) -> str:
+    """Extrai o nome do produto do slug da URL da Shopee como último recurso."""
+    from urllib.parse import unquote
+    slug = urlparse(url).path.split("/")[-1]
+    slug = re.sub(r"-i\.\d+\.\d+$", "", slug)
+    return re.sub(r"\s{2,}", " ", unquote(slug).replace("-", " ")).strip()
+
+
+async def _extrair_dados_shopee(url: str) -> dict | None:
+    """Extrai nome, imagem e preço via API interna da Shopee (sem scraping HTML)."""
+    ids = _shopee_ids(url)
+    if not ids:
+        return None
+    shopid, itemid = ids
+    api_url = f"https://shopee.com.br/api/v4/item/get?itemid={itemid}&shopid={shopid}"
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+        "Referer": "https://shopee.com.br/",
+        "Accept": "application/json",
+        "Accept-Language": "pt-BR,pt;q=0.9",
+        "X-Api-Source": "pc",
+    }
     try:
+        async with httpx.AsyncClient(timeout=15, follow_redirects=True) as client:
+            r = await client.get(api_url, headers=headers)
+            logger.info("Shopee API → HTTP %d para %s", r.status_code, url)
+            if r.status_code != 200:
+                return None
+            item = (r.json().get("data") or {})
+            nome = (item.get("name") or "").strip()
+            if not nome:
+                return None
+            preco_raw = item.get("price_min") or item.get("price")
+            preco = None
+            if preco_raw:
+                v = round(preco_raw / 100000, 2)
+                preco = v if _PRECO_MIN < v < _PRECO_MAX else None
+            imagens = item.get("images") or []
+            imagem = f"https://cf.shopee.com.br/file/{imagens[0]}" if imagens else ""
+            return {"nome": nome, "loja": "shopee.com.br", "imagem": imagem, "preco": preco}
+    except Exception as exc:
+        logger.warning("Shopee API falhou para %s: %s", url, exc)
+        return None
+
+
+async def extrair_preco(url: str) -> float | None:
+    """Extrai o preço de um produto. Tenta API da Shopee, Worker, ScraperAPI, curl_cffi, Playwright."""
+    try:
+        if "shopee.com.br" in url:
+            dados = await _extrair_dados_shopee(url)
+            if dados and dados.get("preco") is not None:
+                logger.info("Shopee API: R$ %.2f para %s", dados["preco"], url)
+                return dados["preco"]
+
         for buscar in [_buscar_html_worker, _buscar_html_scraper_api, _buscar_html_cffi, _buscar_html_playwright]:
             html = await buscar(url)
             if html:
@@ -396,6 +453,12 @@ async def extrair_preco(url: str) -> float | None:
 async def extrair_metadados_produto(url: str) -> dict:
     """Extrai nome, loja e imagem do produto. Rejeita nomes que parecem domínios ou homepages."""
     loja = urlparse(url).netloc.replace("www.", "")
+
+    if "shopee.com.br" in url:
+        dados = await _extrair_dados_shopee(url)
+        if dados and dados.get("nome"):
+            return {"nome": dados["nome"], "loja": loja, "imagem": dados.get("imagem", "")}
+
     for buscar in [_buscar_html_worker, _buscar_html_scraper_api, _buscar_html_cffi, _buscar_html_playwright]:
         html = await buscar(url)
         if html:
@@ -408,6 +471,12 @@ async def extrair_metadados_produto(url: str) -> dict:
                 and not _nome_parece_homepage(nome, loja)
             ):
                 return meta
+
+    if "shopee.com.br" in url:
+        slug_nome = _nome_de_slug_shopee(url)
+        if slug_nome:
+            return {"nome": slug_nome, "loja": loja, "imagem": ""}
+
     return {"nome": "", "loja": loja, "imagem": ""}
 
 
@@ -421,12 +490,25 @@ async def extrair_produto_completo(url: str, *, usar_playwright: bool = True) ->
     meta: dict = {"nome": "", "loja": loja, "imagem": ""}
     preco: float | None = None
 
+    if "shopee.com.br" in url:
+        dados = await _extrair_dados_shopee(url)
+        if dados:
+            if dados.get("nome"):
+                meta = {"nome": dados["nome"], "loja": loja, "imagem": dados.get("imagem", "")}
+            preco = dados.get("preco")
+        if meta["nome"] and preco is not None:
+            logger.info("Shopee API — %s | nome=%s preco=%s", url, meta["nome"][:50], preco)
+            return {**meta, "preco": preco}
+
     # 1ª tentativa: Worker > ScraperAPI > curl_cffi
     html = await _buscar_html_worker(url) or await _buscar_html_scraper_api(url) or await _buscar_html_cffi(url)
     if html:
         sopa = BeautifulSoup(html, "html.parser")
-        meta = _extrair_metadados_de_sopa(sopa, url)
-        preco = _extrair_preco_de_sopa(sopa)
+        meta_html = _extrair_metadados_de_sopa(sopa, url)
+        if meta_html["nome"] and not _nome_parece_homepage(meta_html["nome"], loja):
+            meta = meta_html
+        if preco is None:
+            preco = _extrair_preco_de_sopa(sopa)
 
     # 2ª tentativa: Playwright se ainda falta algo e foi permitido
     if usar_playwright and (not meta["nome"] or preco is None):
@@ -437,6 +519,12 @@ async def extrair_produto_completo(url: str, *, usar_playwright: bool = True) ->
                 meta = _extrair_metadados_de_sopa(sopa_pw, url)
             if preco is None:
                 preco = _extrair_preco_de_sopa(sopa_pw)
+
+    # Shopee: usa slug da URL como fallback para o nome se tudo falhou
+    if not meta["nome"] and "shopee.com.br" in url:
+        slug_nome = _nome_de_slug_shopee(url)
+        if slug_nome:
+            meta["nome"] = slug_nome
 
     logger.info(
         "Produto extraído — %s | nome=%s preco=%s",
