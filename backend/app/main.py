@@ -1,4 +1,5 @@
 import logging
+import sys
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator
 
@@ -11,7 +12,11 @@ from app.core.config import configuracoes
 from app.core.limiter import RateLimitMiddleware
 from app.scheduler.jobs import iniciar_scheduler
 
-logging.basicConfig(level=logging.INFO, format="%(levelname)s — %(name)s — %(message)s")
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(levelname)s — %(name)s — %(message)s",
+    stream=sys.stdout,
+)
 
 
 @asynccontextmanager
