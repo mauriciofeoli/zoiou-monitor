@@ -300,16 +300,17 @@ async def atualizar_preco_agora(
         if updates:
             await db_s.table("produtos").update(updates).eq("id", produto_id).execute()
 
+    preco_anterior_db = await buscar_ultimo_preco(db_s, produto_id)
     preco_novo = await extrair_preco(url)
+
     if preco_novo is not None:
-        await registrar_preco(db_s, produto_id, preco_novo)
+        if preco_anterior_db is None or abs(preco_novo - preco_anterior_db) > 0.01:
+            await registrar_preco(db_s, produto_id, preco_novo)
+            await _notificar_variacao(
+                db_s, produto_id, p["nome"], p.get("loja") or "", url, preco_anterior_db, preco_novo
+            )
 
     preco_atual, preco_anterior, ultima_atualizacao = await buscar_ultimos_precos(db_s, produto_id)
-
-    if preco_novo is not None:
-        await _notificar_variacao(
-            db_s, produto_id, p["nome"], p.get("loja") or "", url, preco_anterior, preco_novo
-        )
 
     ativo = lista.data[0]["ativo"]
 

@@ -185,7 +185,35 @@ def _extrair_preco_de_sopa(sopa: BeautifulSoup) -> float | None:
             if candidatos:
                 return _preco_pix_de_candidatos(candidatos)
 
-    # 6. JSON-LD price (fallback — pode ser parcelado)
+    # 6. __NEXT_DATA__ — sites Next.js (Pichau, etc.) embebem dados no SSR
+    next_tag = sopa.find("script", id="__NEXT_DATA__")
+    if next_tag:
+        try:
+            next_data = json.loads(next_tag.string or "")
+            props = next_data.get("props", {}).get("pageProps", {})
+            produto = (
+                props.get("product")
+                or props.get("productData")
+                or props.get("initialState", {}).get("product", {})
+            )
+            if isinstance(produto, dict):
+                for campo in ("price", "priceRange", "specialPrice", "finalPrice", "sale_price"):
+                    val = produto.get(campo)
+                    if val is None and "price_range" in produto:
+                        val = (
+                            produto["price_range"]
+                            .get("minimum_price", {})
+                            .get("final_price", {})
+                            .get("value")
+                        )
+                    if val is not None:
+                        v = _preco_json(val)
+                        if v is not None:
+                            return v
+        except Exception:
+            pass
+
+    # 8. JSON-LD price (fallback — pode ser parcelado)
     for tag in sopa.find_all("script", type="application/ld+json"):
         try:
             dados = json.loads(tag.string or "")
@@ -203,7 +231,7 @@ def _extrair_preco_de_sopa(sopa: BeautifulSoup) -> float | None:
         except Exception:
             continue
 
-    # 7. Fallback: menor preço com R$ explícito em elementos de preço
+    # 9. Fallback: menor preço com R$ explícito em elementos de preço
     for el in sopa.select(".info-price, [class*=price], [class*=preco]"):
         candidatos = _candidatos_com_rs(el.get_text())
         if candidatos:
@@ -360,9 +388,20 @@ async def _buscar_html_playwright(url: str) -> str | None:
             )
             page = await ctx.new_page()
             await page.goto(url, timeout=_TIMEOUT_MS, wait_until="domcontentloaded")
-            for sel in [".prod-new-price", ".info-price", "[itemprop='price']", ".price"]:
+            _SELS_PRECO = [
+                ".prod-new-price",    # Terabyte, Pichau
+                ".price__selling",    # Kabum
+                "[itemprop='price']",
+                "[class*=finalPrice]",
+                "[class*=selling-price]",
+                "[class*=best-price]",
+                ".a-price-whole",     # Amazon
+                ".info-price",
+                ".price",
+            ]
+            for sel in _SELS_PRECO:
                 try:
-                    await page.wait_for_selector(sel, timeout=5_000)
+                    await page.wait_for_selector(sel, timeout=4_000)
                     break
                 except Exception:
                     continue
@@ -374,6 +413,60 @@ async def _buscar_html_playwright(url: str) -> str | None:
             return None
         finally:
             await browser.close()
+
+
+def _ml_item_id(url: str) -> str | None:
+    """Extrai o ID de item MLB de uma URL do Mercado Livre (vários formatos)."""
+    from urllib.parse import parse_qs, unquote
+
+    parsed = urlparse(url)
+    qs = parse_qs(parsed.query)
+
+    # /up/ com item_id nos pdp_filters: pdp_filters=item_id%3AMLB4133477319
+    pdp = unquote(qs.get("pdp_filters", [""])[0])
+    m = re.search(r"item_id[:%=]+(MLB\d+)", pdp)
+    if m:
+        return m.group(1)
+
+    # /p/MLB4133477319 ou /p/MLBU3314664137 (catálogo → tenta mesmo)
+    m = re.search(r"/p/(MLB\d+)", parsed.path)
+    if m:
+        return m.group(1)
+
+    # /produto-nome/MLB-4133477319- ou /{slug}#MLB4133477319
+    m = re.search(r"/MLB-?(\d+)", parsed.path)
+    if m:
+        return f"MLB{m.group(1)}"
+
+    return None
+
+
+async def _extrair_dados_mercadolivre(url: str) -> dict | None:
+    """Extrai nome, imagem e preço via API pública do Mercado Livre."""
+    item_id = _ml_item_id(url)
+    if not item_id:
+        return None
+    api_url = f"https://api.mercadolibre.com/items/{item_id}"
+    try:
+        async with httpx.AsyncClient(timeout=15, follow_redirects=True) as client:
+            r = await client.get(api_url, headers={"Accept": "application/json"})
+            logger.info("ML API → HTTP %d para %s (item %s)", r.status_code, url, item_id)
+            if r.status_code != 200:
+                return None
+            data = r.json()
+            preco_raw = data.get("price")
+            preco: float | None = None
+            if preco_raw is not None:
+                v = float(preco_raw)
+                preco = v if _PRECO_MIN < v < _PRECO_MAX else None
+            nome = (data.get("title") or "").strip()
+            pictures = data.get("pictures") or []
+            thumbnail = (data.get("thumbnail") or "").replace("http://", "https://")
+            imagem = pictures[0].get("url", thumbnail).replace("http://", "https://") if pictures else thumbnail
+            return {"nome": nome, "loja": "mercadolivre.com.br", "imagem": imagem, "preco": preco}
+    except Exception as exc:
+        logger.warning("ML API falhou para %s: %s", url, exc)
+        return None
 
 
 def _shopee_ids(url: str) -> tuple[str, str] | None:
@@ -428,12 +521,18 @@ async def _extrair_dados_shopee(url: str) -> dict | None:
 
 
 async def extrair_preco(url: str) -> float | None:
-    """Extrai o preço de um produto. Tenta API da Shopee, Worker, ScraperAPI, curl_cffi, Playwright."""
+    """Extrai o preço de um produto. Tenta API da Shopee/ML, Worker, ScraperAPI, curl_cffi, Playwright."""
     try:
         if "shopee.com.br" in url:
             dados = await _extrair_dados_shopee(url)
             if dados and dados.get("preco") is not None:
                 logger.info("Shopee API: R$ %.2f para %s", dados["preco"], url)
+                return dados["preco"]
+
+        if "mercadolivre.com.br" in url or "mercadolibre.com.br" in url:
+            dados = await _extrair_dados_mercadolivre(url)
+            if dados and dados.get("preco") is not None:
+                logger.info("ML API: R$ %.2f para %s", dados["preco"], url)
                 return dados["preco"]
 
         for buscar in [_buscar_html_worker, _buscar_html_scraper_api, _buscar_html_cffi, _buscar_html_playwright]:
@@ -456,6 +555,11 @@ async def extrair_metadados_produto(url: str) -> dict:
 
     if "shopee.com.br" in url:
         dados = await _extrair_dados_shopee(url)
+        if dados and dados.get("nome"):
+            return {"nome": dados["nome"], "loja": loja, "imagem": dados.get("imagem", "")}
+
+    if "mercadolivre.com.br" in url or "mercadolibre.com.br" in url:
+        dados = await _extrair_dados_mercadolivre(url)
         if dados and dados.get("nome"):
             return {"nome": dados["nome"], "loja": loja, "imagem": dados.get("imagem", "")}
 
@@ -498,6 +602,16 @@ async def extrair_produto_completo(url: str, *, usar_playwright: bool = True) ->
             preco = dados.get("preco")
         if meta["nome"] and preco is not None:
             logger.info("Shopee API — %s | nome=%s preco=%s", url, meta["nome"][:50], preco)
+            return {**meta, "preco": preco}
+
+    if "mercadolivre.com.br" in url or "mercadolibre.com.br" in url:
+        dados = await _extrair_dados_mercadolivre(url)
+        if dados:
+            if dados.get("nome"):
+                meta = {"nome": dados["nome"], "loja": loja, "imagem": dados.get("imagem", "")}
+            preco = dados.get("preco")
+        if meta["nome"] and preco is not None:
+            logger.info("ML API — %s | nome=%s preco=%s", url, meta["nome"][:50], preco)
             return {**meta, "preco": preco}
 
     # 1ª tentativa: Worker > ScraperAPI > curl_cffi
